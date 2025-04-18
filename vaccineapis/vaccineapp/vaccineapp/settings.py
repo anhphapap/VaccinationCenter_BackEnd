@@ -25,7 +25,7 @@ SECRET_KEY = 'django-insecure-@!-cut$liq%#!a=59$9awv1j14&f!_*v8)wxr5!s8@xm!#k328
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["*"]
 
 
 # Application definition
@@ -40,7 +40,8 @@ INSTALLED_APPS = [
     'ckeditor',
     'ckeditor_uploader',
     'vaccines.apps.VaccinesConfig',
-    'rest_framework'
+    'rest_framework',
+    'drf_yasg',
     ]
 
 CKEDITOR_UPLOAD_PATH = 'ckeditor/images/'
@@ -54,6 +55,9 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+MIDDLEWARE.insert(1, 'whitenoise.middleware.WhiteNoiseMiddleware')
+import os
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 AUTH_USER_MODEL = 'vaccines.User'
 ROOT_URLCONF = 'vaccineapp.urls'
@@ -84,7 +88,7 @@ DATABASES = {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'vaccinedb',
         'USER': 'root',
-        'PASSWORD': 'Admin@123',
+        'PASSWORD': 'vrain2403',
         'HOST': ''
     }
 }
