@@ -15,7 +15,7 @@ class CategoryViewSet(viewsets.ViewSet, generics.ListAPIView):
     @action(detail=True, methods=['get'], url_path='vaccines')
     def get_vaccines_by_category(self, request, pk):
         category = Category.objects.get(id=pk)
-        vaccines = category.vaccines.all()
+        vaccines = category.vaccines.filter(active=True)
         serializer = VaccineSerializer(vaccines, many=True)
         return Response(serializer.data)
 

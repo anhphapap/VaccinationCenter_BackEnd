@@ -15,8 +15,8 @@ class VaccineSerializer(serializers.ModelSerializer):
         model = Vaccine
         fields = ['id', 'name', 'origin', 'image', 'price', 'cates']
 
-    def get_cates(self, obj):
-        return [{'id': category.id, 'name': category.name} for category in obj.cates.all()]
+    def get_cates(self, vaccine):
+        return [{'id': category.id, 'name': category.name} for category in vaccine.cates.all()]
 
 
 class VaccineDetailSerializer(VaccineSerializer):
