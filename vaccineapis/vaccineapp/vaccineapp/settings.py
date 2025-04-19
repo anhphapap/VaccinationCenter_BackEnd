@@ -45,11 +45,21 @@ INSTALLED_APPS = [
     'vaccines.apps.VaccinesConfig',
     'rest_framework',
     'drf_yasg',
+    'oauth2_provider',
+    'corsheaders',
     ]
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'oauth2_provider.contrib.rest_framework.OAuth2Authentication',
+    ),
+}
+
 
 CKEDITOR_UPLOAD_PATH = 'ckeditor/images/'
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -61,7 +71,7 @@ MIDDLEWARE = [
 MIDDLEWARE.insert(1, 'whitenoise.middleware.WhiteNoiseMiddleware')
 import os
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
-
+CORS_ALLOW_ALL_ORIGINS = True
 AUTH_USER_MODEL = 'vaccines.User'
 ROOT_URLCONF = 'vaccineapp.urls'
 
@@ -137,3 +147,6 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# CLIENT_ID = 'xY1uptcr9hUtgTIO7FncqctsfeVMtfDXePfyGInk'
+# CLIENT_SECRET = 'Ra4KuuRgCPIyEw9Kk1UxigVJeHsapbF597M6UQatIn8PraA76xb3NfjMOjkSFMqWZTGizTiEIYe8ffeWDDp8wwvLjnJQmF7YUUoabzkGM6dJ8JXdgt2F33ra1CodgM2Y'
