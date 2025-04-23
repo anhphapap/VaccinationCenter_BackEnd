@@ -33,23 +33,25 @@ class UserSerializer(serializers.ModelSerializer):
             'password': {'write_only': True}
         }
 
+    #validate username
     def validate_username(self, value):
         if User.objects.filter(username=value).exists():
             raise serializers.ValidationError("Tên người dùng đã tồn tại, vui lòng chọn tên khác")
         return value
     
-    # def validate_password(self, value):
-    #     if len(value) < 8:
-    #         raise serializers.ValidationError("Mật khẩu phải có ít nhất 8 ký tự")
-    #     if not re.search(r'[A-Za-z]', value) and not re.search(r'[0-9]', value):
-    #         raise serializers.ValidationError("Mật khẩu phải có ít nhất 1 chữ cái và 1 số")
-    #     return value
+    #validate password
+    def validate_password(self, value):
+        if len(value) < 8:
+            raise serializers.ValidationError("Mật khẩu phải có ít nhất 8 ký tự")
+        if not re.search(r'[A-Za-z]', value) and not re.search(r'[0-9]', value):
+            raise serializers.ValidationError("Mật khẩu phải có ít nhất 1 chữ cái và 1 số")
+        return value
 
+    #validate email
     def validate_email(self, value):
         if value == '':
             raise serializers.ValidationError("Email không được để trống")
         return value
-
 
     def create(self, validated_data):
         user = User(**validated_data)
