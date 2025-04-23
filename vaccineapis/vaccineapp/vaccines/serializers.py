@@ -13,7 +13,7 @@ class VaccineSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Vaccine
-        fields = ['id', 'name', 'origin', 'image', 'price', 'cates']
+        fields = ['id', 'name', 'origin', 'disease', 'image', 'price', 'cates']
 
     def get_cates(self, vaccine):
         return [{'id': category.id, 'name': category.name} for category in vaccine.cates.all()]

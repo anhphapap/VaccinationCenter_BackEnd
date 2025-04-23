@@ -33,6 +33,7 @@ class Vaccine(BaseModel):
     patient = models.TextField()
     outline = RichTextField()
     effects = RichTextField()
+    disease = models.CharField(max_length=255)
     image = models.CharField(max_length=255)
     price = models.FloatField()
     cates = models.ManyToManyField(Category, blank=True, related_name='vaccines')
