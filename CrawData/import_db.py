@@ -39,13 +39,14 @@ cursor = conn.cursor()
 #         patient = row['doi_tuong']
 #         outline = row['lich_tiem']
 #         effect = row['phan_ung']
+#         disease = row['phong_benh']
 #         if(row['gia'] == ''):
 #             price = 0
 #         else:
 #             price = row['gia']
 #         cursor.execute(
-#             'INSERT INTO vaccines_vaccine (`id`, `name`, `description`, `origin`, `injection`, `recommend`, `manual`, `preserve`, `patient`, `outline`, `effects`, `image`, `price`, `created_date`, `updated_date`) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)',
-#             (id, name, description, origin, injection, recommend, manual, preserve, patient, outline, effect, image, price, datetime.now(), datetime.now())
+#             'INSERT INTO vaccines_vaccine (`id`, `name`, `description`, `origin`, `injection`, `recommend`, `manual`, `preserve`, `patient`, `outline`, `effects`, `disease`, `image`, `price`, `created_date`, `updated_date`) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,%s)',
+#             (id, name, description, origin, injection, recommend, manual, preserve, patient, outline, effect, disease, image, price, datetime.now(), datetime.now())
 #         )
 
 # Import vac_cate
