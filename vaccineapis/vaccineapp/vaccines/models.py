@@ -5,9 +5,10 @@ from django.contrib.auth.models import AbstractUser
 
 class User(AbstractUser):
     avatar = models.CharField(max_length=255, default='/static/images/avatar.png')
-    birth_date = models.DateField()
-    gender = models.BooleanField(default=True)
-    phone = models.CharField(max_length=255)
+    birth_date = models.DateField(null=True, blank=True)
+    gender = models.BooleanField(default=True, null=True, blank=True)
+    phone = models.CharField(unique=True, max_length=255, null=True, blank=True)
+    address = models.CharField(max_length=255, null=True, blank=True)
 
 
 class BaseModel(models.Model):
@@ -49,7 +50,7 @@ class Vaccine(BaseModel):
 
 
 class Dose(models.Model):
-    vaccine = models.ForeignKey(Vaccine, on_delete=models.CASCADE)
+    vaccine = models.ForeignKey(Vaccine, on_delete=models.CASCADE, related_name='doses')
     number = models.IntegerField()
     days_after_previous = models.IntegerField()
     note = models.TextField(null=True, blank=True)
