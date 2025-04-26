@@ -77,3 +77,9 @@ class InjectionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Injection
         fields = '__all__'
+
+class DoseSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Dose
+        fields = '__all__'
+
