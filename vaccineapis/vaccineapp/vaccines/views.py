@@ -32,8 +32,12 @@ class CategoryViewSet(viewsets.ViewSet, generics.ListAPIView):
 
 class VaccineViewSet(viewsets.ViewSet, generics.RetrieveAPIView, generics.ListAPIView):
     queryset = Vaccine.objects.filter(active=True)
-    serializer_class = VaccineDetailSerializer
     pagination_class = VaccinePaginator
+
+    def get_serializer_class(self):
+        if self.action == 'retrieve':
+            return VaccineDetailSerializer
+        return VaccineSerializer
     
     #tim kiem theo ten
     def get_queryset(self):

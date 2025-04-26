@@ -11,11 +11,21 @@ class CategorySerializer(serializers.ModelSerializer):
 
 class VaccineSerializer(serializers.ModelSerializer):
     cates = serializers.SerializerMethodField()
-    doses = serializers.SerializerMethodField()
 
     class Meta:
         model = Vaccine
-        fields = ['id', 'name', 'origin', 'disease', 'image', 'price', 'cates', 'doses']
+        fields = ['id', 'name', 'origin', 'disease', 'image', 'price', 'cates']
+
+    def get_cates(self, vaccine):
+        return [{'id': category.id, 'name': category.name} for category in vaccine.cates.all()]
+
+   
+class VaccineDetailSerializer(serializers.ModelSerializer):
+    cates = serializers.SerializerMethodField()
+    doses = serializers.SerializerMethodField()
+    class Meta:
+        model = Vaccine
+        fields = '__all__'
 
     def get_cates(self, vaccine):
         return [{'id': category.id, 'name': category.name} for category in vaccine.cates.all()]
@@ -23,11 +33,6 @@ class VaccineSerializer(serializers.ModelSerializer):
     def get_doses(self, vaccine):
         return [{'id': dose.id, 'number': dose.number, 'days_after_previous': dose.days_after_previous, 'note': dose.note} for dose in vaccine.doses.all()]
 
-
-class VaccineDetailSerializer(VaccineSerializer):
-    class Meta:
-        model = Vaccine
-        fields = VaccineSerializer.Meta.fields
 
 
 class UserSerializer(serializers.ModelSerializer):
