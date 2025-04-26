@@ -6,7 +6,8 @@ from rest_framework.routers import DefaultRouter
 router = DefaultRouter()
 router.register(r'vaccines', views.VaccineViewSet, basename='vaccine')
 router.register(r'categories', views.CategoryViewSet, basename='category')
-router.register(r'users', views.UserViewSet, basename='user')
+router.register(r'user', views.UserViewSet, basename='user')
+router.register(r'injections', views.InjectionViewSet, basename='injection')
 
 urlpatterns = [
     path('', include(router.urls)),

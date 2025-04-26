@@ -102,8 +102,11 @@ DATABASES = {
         'NAME': config('DB_NAME'),
         'USER': config('DB_USER'),
         'PASSWORD': config('DB_PASSWORD'),
-        'HOST': config('DB_HOST', default='localhost'),
+        'HOST': config('DB_HOST'),
         'PORT': config('DB_PORT', default='3306'),
+        'OPTIONS': {
+            'ssl': {'ssl-ca': ''}  # bắt Railway accept SSL (dùng ssl-ca trống)
+        }
     }
 }
 
@@ -148,5 +151,5 @@ STATIC_URL = 'static/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# CLIENT_ID = 'xY1uptcr9hUtgTIO7FncqctsfeVMtfDXePfyGInk'
-# CLIENT_SECRET = 'Ra4KuuRgCPIyEw9Kk1UxigVJeHsapbF597M6UQatIn8PraA76xb3NfjMOjkSFMqWZTGizTiEIYe8ffeWDDp8wwvLjnJQmF7YUUoabzkGM6dJ8JXdgt2F33ra1CodgM2Y'
+# CLIENT_ID = 'm8H0JMoxBgJTUFHvW6f2a29kf23udVTHoT5Ig1pg'
+# CLIENT_SECRET = '977cvBKgFvVg44A6s26bA5E4mvGUfMrQSUyQRrzzoAl3Uh2ADYpN1GcsDeObHdlNGCYnbCyytN3Z5EMArz6fxEnDbTJ58sEAXZMwG4MW6qJof4rENph8oKvqA68KJToP'
