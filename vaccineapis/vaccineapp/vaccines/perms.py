@@ -1,0 +1,14 @@
+from rest_framework import permissions
+
+
+class IsStaff(permissions.IsAuthenticated):
+    message = 'Bạn không có quyền truy cập'
+    def has_permission(self, request, view):
+        return super().has_permission(request, view) and request.user.is_staff
+
+class UserOwner(permissions.IsAuthenticated):
+    message = 'Bạn không có quyền truy cập'
+    def has_object_permission(self, request, view, user):
+        return super().has_object_permission(request, view, user) and user.user == request.user
+    
+

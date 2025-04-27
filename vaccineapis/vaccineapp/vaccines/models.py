@@ -1,14 +1,20 @@
 from django.db import models
 from ckeditor.fields import RichTextField
 from django.contrib.auth.models import AbstractUser
+from django.utils import timezone
 
 
 class User(AbstractUser):
-    avatar = models.CharField(max_length=255, default='/static/images/avatar.png')
+    avatar = models.CharField(
+        max_length=255, default='/static/images/avatar.png')
     birth_date = models.DateField(null=True, blank=True)
     gender = models.BooleanField(default=True, null=True, blank=True)
-    phone = models.CharField(unique=True, max_length=255, null=True, blank=True)
+    phone = models.CharField(
+        unique=True, max_length=255, null=True, blank=True)
     address = models.CharField(max_length=255, null=True, blank=True)
+    class Meta:
+        verbose_name = 'Người dùng'
+        verbose_name_plural = 'Người dùng'
 
 
 class BaseModel(models.Model):
@@ -26,6 +32,11 @@ class Category(models.Model):
 
     def __str__(self):
         return self.name
+
+    class Meta:
+        verbose_name = 'Danh mục'
+        verbose_name_plural = 'Danh mục'
+
 
 
 class Vaccine(BaseModel):
@@ -48,9 +59,15 @@ class Vaccine(BaseModel):
     def __str__(self):
         return self.name
 
+    class Meta:
+        verbose_name = 'Vacxin'
+        verbose_name_plural = 'Vacxin'
 
-class Dose(models.Model):
-    vaccine = models.ForeignKey(Vaccine, on_delete=models.CASCADE, related_name='doses')
+
+
+class Dose(BaseModel):
+    vaccine = models.ForeignKey(
+        Vaccine, on_delete=models.CASCADE, related_name='doses')
     number = models.IntegerField()
     days_after_previous = models.IntegerField()
     note = models.TextField(null=True, blank=True)
@@ -59,7 +76,8 @@ class Dose(models.Model):
         return f"Vaccine {self.vaccine.name} - Mũi {self.number}"
 
 
-class Injection(models.Model):
+
+class Injection(BaseModel):
     dose = models.ForeignKey(Dose, on_delete=models.PROTECT)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     vaccination_campaign = models.ForeignKey(
@@ -69,13 +87,24 @@ class Injection(models.Model):
     def __str__(self):
         return f"{self.dose.vaccine.name} - {self.user.username} - {self.injection_time}"
 
+    class Meta:
+        verbose_name = 'Lịch tiêm'
+        verbose_name_plural = 'Lịch tiêm'
 
-class VaccinationCampaign(models.Model):
+
+
+class VaccinationCampaign(BaseModel):
     name = models.CharField(max_length=255)
     description = RichTextField()
     start_date = models.DateTimeField()
     end_date = models.DateTimeField()
-    # created_by = models.ForeignKey(User, on_delete=models.CASCADE)
+    vaccine = models.ForeignKey(Vaccine, on_delete=models.CASCADE, null=True, blank=True)
 
     def __str__(self):
         return self.name
+    
+    class Meta:
+        verbose_name = 'Đợt tiêm cộng đồng'
+        verbose_name_plural = 'Đợt tiêm cộng đồng'
+
+

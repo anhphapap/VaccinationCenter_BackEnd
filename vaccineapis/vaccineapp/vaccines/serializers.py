@@ -92,3 +92,10 @@ class DoseSerializer(serializers.ModelSerializer):
         model = Dose
         fields = '__all__'
 
+class VaccinationCampaignSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = VaccinationCampaign
+        fields = '__all__'
+
+
+
