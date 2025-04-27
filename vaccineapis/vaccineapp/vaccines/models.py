@@ -12,6 +12,7 @@ class User(AbstractUser):
     phone = models.CharField(
         unique=True, max_length=255, null=True, blank=True)
     address = models.CharField(max_length=255, null=True, blank=True)
+    is_completed_profile = models.BooleanField(default=False)
     class Meta:
         verbose_name = 'Người dùng'
         verbose_name_plural = 'Người dùng'
