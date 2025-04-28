@@ -7,7 +7,7 @@ from vaccines.serializers import VaccineSerializer, CategorySerializer, VaccineD
 from vaccines.paginators import CategoryPaginator, VaccinePaginator, InjectionPaginator, UserPaginator, VaccinationCampaignPaginator
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
-from vaccines.perms import IsStaff, UserOwner
+from vaccines.perms import IsStaff, UserOwner, InjectionOwner
 
 class CategoryViewSet(viewsets.ViewSet, generics.ListAPIView):
     queryset = Category.objects.all()
