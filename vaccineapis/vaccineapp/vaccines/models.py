@@ -108,4 +108,3 @@ class VaccinationCampaign(BaseModel):
         verbose_name = 'Đợt tiêm cộng đồng'
         verbose_name_plural = 'Đợt tiêm cộng đồng'
 
-

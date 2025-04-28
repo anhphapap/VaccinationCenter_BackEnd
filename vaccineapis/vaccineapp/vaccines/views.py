@@ -79,7 +79,7 @@ class InjectionViewSet(viewsets.ModelViewSet):
     def get_permissions(self):
         if self.action == 'put' or self.action == 'patch' or self.action == 'delete':
             return [IsStaff()]
-        return [UserOwner()]
+        return [InjectionOwner()]
 
 
 
