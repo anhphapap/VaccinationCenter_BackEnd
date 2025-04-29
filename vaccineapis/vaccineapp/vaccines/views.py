@@ -49,10 +49,11 @@ class VaccineViewSet(viewsets.ViewSet, generics.RetrieveAPIView, generics.ListAP
             queryset = queryset.filter(name__icontains=q, active=True)
 
         if sort_by == 'price_asc':
-            queryset = queryset.order_by('price')
+            queryset = queryset.order_by('price', 'id')
         elif sort_by == 'price_desc':
-            queryset = queryset.order_by('-price')
-            
+            queryset = queryset.order_by('-price', 'id')
+        else:
+            queryset = queryset.order_by('id')
         return queryset
 
 
