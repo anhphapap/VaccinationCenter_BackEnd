@@ -9,6 +9,7 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from vaccines.perms import IsStaff, UserOwner, InjectionOwner
 
+
 class CategoryViewSet(viewsets.ViewSet, generics.ListAPIView):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
@@ -33,7 +34,7 @@ class CategoryViewSet(viewsets.ViewSet, generics.ListAPIView):
 class VaccineViewSet(viewsets.ViewSet, generics.RetrieveAPIView, generics.ListAPIView):
     queryset = Vaccine.objects.filter(active=True)
     pagination_class = VaccinePaginator
-    
+
     def get_serializer_class(self):
         if self.action == 'retrieve':
             return VaccineDetailSerializer
@@ -43,8 +44,15 @@ class VaccineViewSet(viewsets.ViewSet, generics.RetrieveAPIView, generics.ListAP
     def get_queryset(self):
         queryset = self.queryset
         q = self.request.query_params.get('q')
+        sort_by = self.request.query_params.get('sort_by')
         if q:
-            queryset = queryset.filter(name__icontains=q)
+            queryset = queryset.filter(name__icontains=q, active=True)
+
+        if sort_by == 'price_asc':
+            queryset = queryset.order_by('price')
+        elif sort_by == 'price_desc':
+            queryset = queryset.order_by('-price')
+            
         return queryset
 
 
@@ -66,10 +74,29 @@ class UserViewSet(viewsets.ViewSet, generics.RetrieveUpdateAPIView, generics.Cre
             return super().update(request, *args, **kwargs)
         return Response({'error': 'Method not allowed'}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
+    @action(detail=True, methods=['get'], url_path='injections')
+    def get_injections_by_user(self, request, pk):
+        user = User.objects.get(id=pk)
+        injections = user.injections.filter(active=True)
+        return Response(InjectionSerializer(injections, many=True).data, status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=['post'], url_path='campaigns')
+    def create_campaign(self, request, pk):
+        user = User.objects.get(id=pk)
+        campaign = VaccinationCampaign.objects.create(
+            user=user,
+            name=request.data['name'],
+            description=request.data['description'],
+            start_date=request.data['start_date'],
+            end_date=request.data['end_date'],
+        )
+        return Response(VaccinationCampaignSerializer(campaign).data, status=status.HTTP_200_OK)
+
 
 class InjectionViewSet(viewsets.ModelViewSet):
     serializer_class = InjectionSerializer
     pagination_class = InjectionPaginator
+
     def get_queryset(self):
         user = self.request.user
         if user.is_staff:
@@ -82,10 +109,16 @@ class InjectionViewSet(viewsets.ModelViewSet):
         return [InjectionOwner()]
 
 
-
-class VaccinationCampaignViewSet(viewsets.ModelViewSet ):
+class VaccinationCampaignViewSet(viewsets.ViewSet, generics.ListAPIView):
     queryset = VaccinationCampaign.objects.all()
     serializer_class = VaccinationCampaignSerializer
     permission_classes = [IsStaff]
+
     def get_queryset(self):
         return VaccinationCampaign.objects.filter(active=True)
+
+    @action(detail=True, methods=['get'], url_path='injections')
+    def get_injections_by_campaign(self, request, pk):
+        campaign = VaccinationCampaign.objects.get(id=pk)
+        injections = campaign.injections.filter(active=True)
+        return Response(InjectionSerializer(injections, many=True).data, status=status.HTTP_200_OK)
