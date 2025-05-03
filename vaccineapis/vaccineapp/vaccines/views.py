@@ -8,6 +8,9 @@ from vaccines.paginators import CategoryPaginator, VaccinePaginator, InjectionPa
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from vaccines.perms import IsStaff, UserOwner, InjectionOwner
+from django.db.models import Q
+from functools import reduce
+import operator
 
 
 class CategoryViewSet(viewsets.ViewSet, generics.ListAPIView):
@@ -45,15 +48,33 @@ class VaccineViewSet(viewsets.ViewSet, generics.RetrieveAPIView, generics.ListAP
         queryset = self.queryset
         q = self.request.query_params.get('q')
         sort_by = self.request.query_params.get('sort_by')
+        cates = self.request.query_params.get('cates')
+        min_price = self.request.query_params.get('min_price')
+        max_price = self.request.query_params.get('max_price')
+        # tim kiem theo ten
         if q:
             queryset = queryset.filter(name__icontains=q, active=True)
 
+        # loc theo danh muc
+        if cates:
+            conditions = [Q(category__in=cates) for cate in cates]
+            combined_conditions = reduce(operator.and_, conditions)
+            queryset = queryset.filter(combined_conditions)
+        
+        #loc theo gia
+        if min_price:
+            queryset = queryset.filter(price__gte=float(min_price))
+        if max_price:
+            queryset = queryset.filter(price__lte=float(max_price))
+
+        # sap xep theo gia
         if sort_by == 'price_asc':
             queryset = queryset.order_by('price', 'id')
         elif sort_by == 'price_desc':
             queryset = queryset.order_by('-price', 'id')
         else:
             queryset = queryset.order_by('id')
+
         return queryset
 
 
@@ -63,6 +84,7 @@ class UserViewSet(viewsets.ViewSet, generics.RetrieveUpdateAPIView, generics.Cre
     pagination_class = UserPaginator
     lookup_field = 'username'
 
+    # phan quyen
     def get_permissions(self):
         if self.action == 'create':
             return [AllowAny()]
