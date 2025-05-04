@@ -8,7 +8,7 @@ from vaccines.paginators import CategoryPaginator, VaccinePaginator, InjectionPa
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from vaccines.perms import IsStaff, UserOwner, InjectionOwner
-from django.db.models import Q
+from django.db.models import Q, Count
 from functools import reduce
 import operator
 
@@ -55,13 +55,15 @@ class VaccineViewSet(viewsets.ViewSet, generics.RetrieveAPIView, generics.ListAP
         if q:
             queryset = queryset.filter(name__icontains=q, active=True)
 
+
         # loc theo danh muc
         if cates:
-            conditions = [Q(cates__id=cate) for cate in cates]
-            combined_conditions = reduce(operator.and_, conditions)
-            queryset = queryset.filter(combined_conditions).distinct()
-        
-        #loc theo gia
+            cate_ids = [int(cate) for cate in cates]
+            queryset = queryset.filter(cates__id__in=cate_ids)
+            queryset = queryset.annotate(num_cates=Count(
+                'cates', filter=Q(cates__id__in=cate_ids), distinct=True))
+            queryset = queryset.filter(num_cates=len(cate_ids))
+       # loc theo gia
         if min_price:
             queryset = queryset.filter(price__gte=float(min_price))
         if max_price:
