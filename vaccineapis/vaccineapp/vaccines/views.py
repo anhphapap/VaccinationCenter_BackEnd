@@ -55,15 +55,11 @@ class VaccineViewSet(viewsets.ViewSet, generics.RetrieveAPIView, generics.ListAP
         if q:
             queryset = queryset.filter(name__icontains=q, active=True)
 
-
         # loc theo danh muc
         if cates:
             cate_ids = [int(cate) for cate in cates]
-            queryset = queryset.filter(cates__id__in=cate_ids)
-            queryset = queryset.annotate(num_cates=Count(
-                'cates', filter=Q(cates__id__in=cate_ids), distinct=True))
-            queryset = queryset.filter(num_cates=len(cate_ids))
-       # loc theo gia
+            queryset = queryset.filter(cates__id__in=cate_ids).distinct()
+        # loc theo gia
         if min_price:
             queryset = queryset.filter(price__gte=float(min_price))
         if max_price:
