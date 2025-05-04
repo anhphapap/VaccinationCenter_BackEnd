@@ -48,7 +48,7 @@ class VaccineViewSet(viewsets.ViewSet, generics.RetrieveAPIView, generics.ListAP
         queryset = self.queryset
         q = self.request.query_params.get('q')
         sort_by = self.request.query_params.get('sort_by')
-        cates = self.request.query_params.get('cates')
+        cates = self.request.query_params.getlist('cate')
         min_price = self.request.query_params.get('min_price')
         max_price = self.request.query_params.get('max_price')
         # tim kiem theo ten
@@ -57,9 +57,9 @@ class VaccineViewSet(viewsets.ViewSet, generics.RetrieveAPIView, generics.ListAP
 
         # loc theo danh muc
         if cates:
-            conditions = [Q(category__in=cates) for cate in cates]
+            conditions = [Q(cates__id=cate) for cate in cates]
             combined_conditions = reduce(operator.and_, conditions)
-            queryset = queryset.filter(combined_conditions)
+            queryset = queryset.filter(combined_conditions).distinct()
         
         #loc theo gia
         if min_price:
