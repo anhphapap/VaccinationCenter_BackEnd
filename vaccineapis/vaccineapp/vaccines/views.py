@@ -217,8 +217,8 @@ class VaccinationCampaignViewSet(viewsets.ModelViewSet):
 
     def get_permissions(self):
         if self.request.method.__eq__('GET'):
-            return [AllowAny]
-        return [IsStaff]
+            return [AllowAny()]
+        return [IsStaff()]
 
     @action(detail=True, methods=['get'], url_path='injections', permission_classes=[IsStaff])
     def get_injections_by_campaign(self, request, pk):

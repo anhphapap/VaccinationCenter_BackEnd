@@ -12,7 +12,7 @@ class UserOwner(permissions.IsAuthenticated):
         return super().has_object_permission(request, view, user) and user == request.user
 
 
-class IsStaff(UserOwner):
+class IsStaff(permissions.IsAuthenticated):
     message = 'Bạn không có quyền truy cập'
 
     def has_permission(self, request, view):
