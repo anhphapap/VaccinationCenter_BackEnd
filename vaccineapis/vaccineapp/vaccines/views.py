@@ -3,7 +3,7 @@ from rest_framework import viewsets, generics, status
 from rest_framework.decorators import action
 from rest_framework.request import Request
 from vaccines.models import Vaccine, Category, User, VaccinationCampaign, Dose, Injection
-from vaccines.serializers import VaccineSerializer, CategorySerializer, VaccineDetailSerializer, UserSerializer, VaccinationCampaignSerializer, InjectionSerializer, DoseSerializer, UserRegisterSerializer, UserProfileSerializer
+from vaccines.serializers import VaccineSerializer, CategorySerializer, VaccineDetailSerializer, UserSerializer, VaccinationCampaignSerializer, InjectionSerializer, DoseSerializer, UserRegisterSerializer, UserProfileSerializer, ChangePasswordSerializer
 from vaccines.paginators import CategoryPaginator, VaccinePaginator, InjectionPaginator, UserPaginator, VaccinationCampaignPaginator, DosePaginator
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
@@ -101,6 +101,8 @@ class UserViewSet(viewsets.ModelViewSet):
     def get_serializer_class(self):
         if self.action == 'create':
             return UserRegisterSerializer
+        elif self.action == 'partical_update':
+            return UserProfileSerializer
 
     @action(detail=True, methods=['get'], url_path='injections', permission_classes=[UserOwner])
     def get_injections_by_user(self, request, username=None):
@@ -109,28 +111,52 @@ class UserViewSet(viewsets.ModelViewSet):
         injections = user.injections.filter(active=True)
         return Response(InjectionSerializer(injections, many=True).data, status=status.HTTP_200_OK)
 
+    # @action(detail=True, methods=['patch'], url_path='change-password', permission_classes=[UserOwner])
+    # def change_password(self, request, username):
+    #     user = request.user
+    #     serializer = ChangePasswordSerializer(data=request.data)
+    #     old_password = request.data.get('old_password')
+    #     new_password = request.data.get('new_password')
+
+    #     if not old_password or not new_password:
+    #         return Response({'error': 'Vui lòng cung cấp mật khẩu cũ và mật khẩu mới'},
+    #                         status=status.HTTP_400_BAD_REQUEST)
+
+    #     if not user.check_password(old_password):
+    #         return Response({'error': 'Mật khẩu cũ không đúng'},
+    #                         status=status.HTTP_400_BAD_REQUEST)
+
+    #     try:
+    #         user.set_password(new_password)
+    #         user.save()
+    #         return Response({'message': 'Đổi mật khẩu thành công'},
+    #                         status=status.HTTP_200_OK)
+    #     except Exception as e:
+    #         return Response({'error': str(e)},
+    #                         status=status.HTTP_400_BAD_REQUEST)
     @action(detail=True, methods=['patch'], url_path='change-password', permission_classes=[UserOwner])
     def change_password(self, request, username):
         user = request.user
-        old_password = request.data.get('old_password')
-        new_password = request.data.get('new_password')
+        serializer = ChangePasswordSerializer(data=request.data)
 
-        if not old_password or not new_password:
-            return Response({'error': 'Vui lòng cung cấp mật khẩu cũ và mật khẩu mới'},
-                            status=status.HTTP_400_BAD_REQUEST)
+        if serializer.is_valid():
+            old_password = serializer.validated_data['old_password']
+            new_password = serializer.validated_data['new_password']
 
-        if not user.check_password(old_password):
-            return Response({'error': 'Mật khẩu cũ không đúng'},
-                            status=status.HTTP_400_BAD_REQUEST)
+            if not user.check_password(old_password):
+                return Response({'error': 'Mật khẩu cũ không đúng'},
+                                status=status.HTTP_400_BAD_REQUEST)
 
-        try:
-            user.set_password(new_password)
-            user.save()
-            return Response({'message': 'Đổi mật khẩu thành công'},
-                            status=status.HTTP_200_OK)
-        except Exception as e:
-            return Response({'error': str(e)},
-                            status=status.HTTP_400_BAD_REQUEST)
+            try:
+                user.set_password(new_password)
+                user.save()
+                return Response({'message': 'Đổi mật khẩu thành công'},
+                                status=status.HTTP_200_OK)
+            except Exception as e:
+                return Response({'error': str(e)},
+                                status=status.HTTP_400_BAD_REQUEST)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     # @action(detail=True, methods=['post'], url_path='campaigns')
     # def create_campaign(self, request, pk):

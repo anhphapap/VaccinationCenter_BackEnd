@@ -35,57 +35,16 @@ class VaccineDetailSerializer(serializers.ModelSerializer):
         return [{'id': dose.id, 'number': dose.number, 'days_after_previous': dose.days_after_previous, 'note': dose.note} for dose in vaccine.doses.all()]
 
 
-
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = '__all__'
-        extra_kwargs = {
-            'password': {'write_only': True},
-        }
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
         data['avatar'] = instance.avatar
         return data
     # validate password
-
-    def to_internal_value(self, data):
-        try:
-            return super().to_internal_value(data)
-        except serializers.ValidationError as exc:
-            errors = exc.detail
-            if 'username' in errors:
-                for i, msg in enumerate(errors['username']):
-                    if 'already exists' in msg or 'unique' in msg:
-                        errors['username'][i] = "Tên đăng nhập đã tồn tại!"
-            raise serializers.ValidationError(errors)
-
-    def validate_password(self, password):
-        if len(password) < 8:
-            raise serializers.ValidationError(
-                "Mật khẩu phải có ít nhất 8 ký tự")
-        if not re.search(r'[A-Za-z]', password) and not re.search(r'[0-9]', password):
-            raise serializers.ValidationError(
-                "Mật khẩu phải có ít nhất 1 chữ cái và 1 số")
-        return password
-
-    def create(self, validated_data):
-        user = User(**validated_data)
-        user.set_password(validated_data['password'])
-        user.save()
-        return user
-
-    def update(self, instance, validated_data):
-        for attr, value in validated_data.items():
-            if attr == 'password':
-                instance.set_password(value)
-            else:
-                setattr(instance, attr, value)
-
-        instance.save()
-        return instance
-
 
 class UserRegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, required=True,
@@ -102,7 +61,8 @@ class UserRegisterSerializer(serializers.ModelSerializer):
                 'error_messages': {
                     'required': 'Bạn phải nhập tên đăng nhập'
                 }
-            }
+            },
+            'password': {'write_only': True},
         }
 
     def validate(self, data):
@@ -111,10 +71,32 @@ class UserRegisterSerializer(serializers.ModelSerializer):
                 {"confirm_password": "Mật khẩu xác nhận không khớp"})
         return data
 
+    def validate_password(self, password):
+        if len(password) < 8:
+            raise serializers.ValidationError(
+                "Mật khẩu phải có ít nhất 8 ký tự")
+        if not re.search(r'[A-Za-z]', password) and not re.search(r'[0-9]', password):
+            raise serializers.ValidationError(
+                "Mật khẩu phải có ít nhất 1 chữ cái và 1 số")
+        return password
+
     def create(self, validated_data):
-        validated_data.pop('confirm_password')
-        user = User.objects.create_user(**validated_data)
+        user = User(**validated_data)
+        user.set_password(validated_data['password'])
+        user.save()
         return user
+
+    def to_internal_value(self, data):
+        try:
+            return super().to_internal_value(data)
+        except serializers.ValidationError as exc:
+            errors = exc.detail
+            if 'username' in errors:
+                for i, msg in enumerate(errors['username']):
+                    if 'already exists' in msg or 'unique' in msg:
+                        errors['username'][i] = "Tên đăng nhập đã tồn tại!"
+            raise serializers.ValidationError(errors)
+
 
 
 class UserProfileSerializer(serializers.ModelSerializer):
@@ -154,6 +136,34 @@ class UserProfileSerializer(serializers.ModelSerializer):
                 }
             }
         }
+
+# serializers.py
+
+
+class ChangePasswordSerializer(serializers.Serializer):
+    old_password = serializers.CharField(required=True,
+                                         error_messages={'required': 'Bạn phải nhập mật khẩu cũ'})
+    new_password = serializers.CharField(required=True,
+                                         error_messages={'required': 'Bạn phải nhập mật khẩu mới'})
+
+    def validate_new_password(self, value):
+        if len(value) < 8:
+            raise serializers.ValidationError(
+                "Mật khẩu phải có ít nhất 8 ký tự")
+        if not re.search(r'[A-Za-z]', value) and not re.search(r'[0-9]', value):
+            raise serializers.ValidationError(
+                "Mật khẩu phải có ít nhất 1 chữ cái và 1 số")
+        return value
+
+        def update(self, instance, validated_data):
+            for attr, value in validated_data.items():
+                if attr == 'new_password':
+                    instance.set_password(value)
+                else:
+                    setattr(instance, attr, value)
+
+            instance.save()
+            return instance
 
 
 class VaccinationCampaignSerializer(serializers.ModelSerializer):
