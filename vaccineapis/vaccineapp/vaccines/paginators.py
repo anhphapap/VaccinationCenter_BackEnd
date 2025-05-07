@@ -19,3 +19,7 @@ class VaccinationCampaignPaginator(PageNumberPagination):
 
 class UserPaginator(PageNumberPagination):
     page_size = 5
+
+class DosePaginator(PageNumberPagination):
+    page_size = 10
+

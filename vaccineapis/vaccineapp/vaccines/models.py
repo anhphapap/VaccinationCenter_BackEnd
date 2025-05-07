@@ -13,6 +13,7 @@ class User(AbstractUser):
         unique=True, max_length=255, null=True, blank=True)
     address = models.CharField(max_length=255, null=True, blank=True)
     is_completed_profile = models.BooleanField(default=False)
+
     class Meta:
         verbose_name = 'Người dùng'
         verbose_name_plural = 'Người dùng'
@@ -37,7 +38,6 @@ class Category(models.Model):
     class Meta:
         verbose_name = 'Danh mục'
         verbose_name_plural = 'Danh mục'
-
 
 
 class Vaccine(BaseModel):
@@ -66,7 +66,6 @@ class Vaccine(BaseModel):
         verbose_name_plural = 'Vacxin'
 
 
-
 class Dose(BaseModel):
     vaccine = models.ForeignKey(
         Vaccine, on_delete=models.CASCADE, related_name='doses')
@@ -78,21 +77,22 @@ class Dose(BaseModel):
         return f"Vaccine {self.vaccine.name} - Mũi {self.number}"
 
 
-
 class Injection(BaseModel):
-    dose = models.ForeignKey(Dose, on_delete=models.PROTECT)
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    vaccine = models.ForeignKey(
+        Vaccine, on_delete=models.CASCADE, related_name='injections', null=True, blank=True)
+    user = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name='injections')
     vaccination_campaign = models.ForeignKey(
-        'VaccinationCampaign', on_delete=models.CASCADE)
+        'VaccinationCampaign', on_delete=models.CASCADE, related_name='injections')
     injection_time = models.DateTimeField()
+    number = models.IntegerField(null=True, blank=True)
 
     def __str__(self):
-        return f"{self.dose.vaccine.name} - {self.user.username} - {self.injection_time}"
+        return f"{self.vaccine.name} - {self.user.username} - {self.injection_time}"
 
     class Meta:
         verbose_name = 'Lịch tiêm'
         verbose_name_plural = 'Lịch tiêm'
-
 
 
 class VaccinationCampaign(BaseModel):
@@ -100,12 +100,12 @@ class VaccinationCampaign(BaseModel):
     description = RichTextField()
     start_date = models.DateTimeField()
     end_date = models.DateTimeField()
-    vaccine = models.ForeignKey(Vaccine, on_delete=models.CASCADE, null=True, blank=True)
+    vaccine = models.ForeignKey(
+        Vaccine, on_delete=models.CASCADE, null=True, blank=True)
 
     def __str__(self):
         return self.name
-    
+
     class Meta:
         verbose_name = 'Đợt tiêm cộng đồng'
         verbose_name_plural = 'Đợt tiêm cộng đồng'
-

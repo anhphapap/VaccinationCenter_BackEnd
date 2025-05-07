@@ -3,14 +3,22 @@ from rest_framework import viewsets, generics, status
 from rest_framework.decorators import action
 from rest_framework.request import Request
 from vaccines.models import Vaccine, Category, User, VaccinationCampaign, Dose, Injection
-from vaccines.serializers import VaccineSerializer, CategorySerializer, VaccineDetailSerializer, UserSerializer, VaccinationCampaignSerializer, InjectionSerializer
-from vaccines.paginators import CategoryPaginator, VaccinePaginator, InjectionPaginator, UserPaginator, VaccinationCampaignPaginator
+from vaccines.serializers import VaccineSerializer, CategorySerializer, VaccineDetailSerializer, UserSerializer, VaccinationCampaignSerializer, InjectionSerializer, DoseSerializer
+from vaccines.paginators import CategoryPaginator, VaccinePaginator, InjectionPaginator, UserPaginator, VaccinationCampaignPaginator, DosePaginator
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from vaccines.perms import IsStaff, UserOwner, InjectionOwner
 from django.db.models import Q, Count
 from functools import reduce
 import operator
+from reportlab.pdfgen import canvas
+from reportlab.lib.pagesizes import A4
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
+from reportlab.lib import colors
+from io import BytesIO
+from django.utils import timezone
+from datetime import datetime
 
 
 class CategoryViewSet(viewsets.ViewSet, generics.ListAPIView):
@@ -90,28 +98,47 @@ class UserViewSet(viewsets.ViewSet, generics.RetrieveUpdateAPIView, generics.Cre
             return [UserOwner()]
         return [IsAuthenticated()]
 
-    def update(self, request, *args, **kwargs):
-        if request.method == 'PATCH':
-            return super().update(request, *args, **kwargs)
-        return Response({'error': 'Method not allowed'}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
-
-    @action(detail=True, methods=['get'], url_path='injections')
-    def get_injections_by_user(self, request, pk):
-        user = User.objects.get(id=pk)
+    @action(detail=True, methods=['get'], url_path='injections', permission_classes=[UserOwner])
+    def get_injections_by_user(self, request, username=None):
+        user = self.get_object()  # Điều này sẽ trigger has_object_permission
+        self.check_object_permissions(request, user)  # Bắt buộc phải gọi dòng này!
         injections = user.injections.filter(active=True)
         return Response(InjectionSerializer(injections, many=True).data, status=status.HTTP_200_OK)
 
-    @action(detail=True, methods=['post'], url_path='campaigns')
-    def create_campaign(self, request, pk):
-        user = User.objects.get(id=pk)
-        campaign = VaccinationCampaign.objects.create(
-            user=user,
-            name=request.data['name'],
-            description=request.data['description'],
-            start_date=request.data['start_date'],
-            end_date=request.data['end_date'],
-        )
-        return Response(VaccinationCampaignSerializer(campaign).data, status=status.HTTP_200_OK)
+    @action(detail=True, methods=['patch'], url_path='change-password', permission_classes=[UserOwner])
+    def change_password(self, request):
+        user = request.user
+        old_password = request.data.get('old_password')
+        new_password = request.data.get('new_password')
+
+        if not old_password or not new_password:
+            return Response({'error': 'Vui lòng cung cấp mật khẩu cũ và mật khẩu mới'},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        if not user.check_password(old_password):
+            return Response({'error': 'Mật khẩu cũ không đúng'},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            user.set_password(new_password)
+            user.save()
+            return Response({'message': 'Đổi mật khẩu thành công'},
+                            status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({'error': str(e)},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+    # @action(detail=True, methods=['post'], url_path='campaigns')
+    # def create_campaign(self, request, pk):
+    #     user = User.objects.get(id=pk)
+    #     campaign = VaccinationCampaign.objects.create(
+    #         user=user,
+    #         name=request.data['name'],
+    #         description=request.data['description'],
+    #         start_date=request.data['start_date'],
+    #         end_date=request.data['end_date'],
+    #     )
+    #     return Response(VaccinationCampaignSerializer(campaign).data, status=status.HTTP_200_OK)
 
 
 class InjectionViewSet(viewsets.ModelViewSet):
@@ -129,17 +156,80 @@ class InjectionViewSet(viewsets.ModelViewSet):
             return [IsStaff()]
         return [InjectionOwner()]
 
+    # def generate_certificate(self, injection):
+    #     buffer = BytesIO()
+    #     p = canvas.Canvas(buffer, pagesize=A4)
 
-class VaccinationCampaignViewSet(viewsets.ViewSet, generics.ListAPIView):
+    #     # Set font
+    #     p.setFont("Helvetica-Bold", 16)
+
+    #     # Title
+    #     p.drawCentredString(300, 800, "GIẤY CHỨNG NHẬN TIÊM CHỦNG")
+
+    #     # User information
+    #     p.setFont("Helvetica", 12)
+    #     p.drawString(100, 700, f"Họ và tên: {injection.user.get_full_name()}")
+    #     p.drawString(
+    #         100, 670, f"Ngày sinh: {injection.user.birth_date.strftime('%d/%m/%Y') if injection.user.birth_date else 'N/A'}")
+    #     p.drawString(100, 640, f"Địa chỉ: {injection.user.address or 'N/A'}")
+
+    #     # Vaccine information
+    #     p.drawString(100, 600, f"Tên vaccine: {injection.vaccine.name}")
+    #     p.drawString(100, 570, f"Liều tiêm: {injection.number}")
+    #     p.drawString(
+    #         100, 540, f"Ngày tiêm: {injection.injection_time.strftime('%d/%m/%Y')}")
+    #     p.drawString(
+    #         100, 510, f"Đợt tiêm: {injection.vaccination_campaign.name}")
+
+    #     # Footer
+    #     p.setFont("Helvetica", 10)
+    #     p.drawString(
+    #         100, 100, f"Ngày cấp: {timezone.now().strftime('%d/%m/%Y')}")
+    #     p.drawString(400, 100, "Cơ sở tiêm chủng")
+
+    #     p.showPage()
+    #     p.save()
+
+    #     buffer.seek(0)
+    #     return buffer
+
+    # @action(detail=True, methods=['get'], url_path='download-certificate')
+    # def download_certificate(self, request, pk=None):
+    #     injection = self.get_object()
+
+    #     # Generate PDF
+    #     buffer = self.generate_certificate(injection)
+
+    #     # Create response
+    #     response = HttpResponse(buffer, content_type='application/pdf')
+    #     response[
+    #         'Content-Disposition'] = f'attachment; filename="certificate_{injection.user.username}_{injection.injection_time.strftime("%Y%m%d")}.pdf"'
+
+    #     return response
+
+
+class VaccinationCampaignViewSet(viewsets.ModelViewSet):
     queryset = VaccinationCampaign.objects.all()
     serializer_class = VaccinationCampaignSerializer
-    permission_classes = [IsStaff]
 
     def get_queryset(self):
         return VaccinationCampaign.objects.filter(active=True)
 
-    @action(detail=True, methods=['get'], url_path='injections')
+    def get_permissions(self):
+        if self.request.method.__eq__('GET'):
+            return [AllowAny]
+        return [IsStaff]
+
+    @action(detail=True, methods=['get'], url_path='injections', permission_classes=[IsStaff])
     def get_injections_by_campaign(self, request, pk):
         campaign = VaccinationCampaign.objects.get(id=pk)
         injections = campaign.injections.filter(active=True)
         return Response(InjectionSerializer(injections, many=True).data, status=status.HTTP_200_OK)
+
+
+class DoseViewSet(viewsets.ModelViewSet):
+    serializer_class = DoseSerializer
+    pagination_class = DosePaginator
+
+    def get_queryset(self):
+        return Dose.objects.filter(active=True)

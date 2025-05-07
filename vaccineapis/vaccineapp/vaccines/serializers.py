@@ -19,10 +19,11 @@ class VaccineSerializer(serializers.ModelSerializer):
     def get_cates(self, vaccine):
         return [{'id': category.id, 'name': category.name} for category in vaccine.cates.all()]
 
-   
+
 class VaccineDetailSerializer(serializers.ModelSerializer):
     cates = serializers.SerializerMethodField()
     doses = serializers.SerializerMethodField()
+
     class Meta:
         model = Vaccine
         fields = '__all__'
@@ -38,11 +39,38 @@ class VaccineDetailSerializer(serializers.ModelSerializer):
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ['id', 'first_name', 'last_name', 'username',
-                    'email', 'password', 'avatar',
-                    'phone', 'address', 'birth_date', 'gender', 'is_completed_profile']
+        fields = '__all__'
         extra_kwargs = {
-            'password': {'write_only': True}
+            'password': {'write_only': True},
+            'phone': {
+                'error_messages': {
+                    'required': 'Bạn phải nhập số điện thoại'
+                }
+            },
+            'first_name': {
+                'required': True,
+                'error_messages': {
+                    'required': 'Bạn phải nhập họ'
+                }
+            },
+            'last_name': {
+                'required': True,
+                'error_messages': {
+                    'required': 'Bạn phải nhập tên'
+                }
+            },
+            'address': {
+                'required': True,
+                'error_messages': {
+                    'required': 'Bạn phải nhập địa chỉ'
+                }
+            },
+            'email': {
+                'required': True,
+                'error_messages': {
+                    'required': 'Bạn phải nhập email'
+                }
+            }
         }
 
     def to_representation(self, instance):
@@ -50,6 +78,18 @@ class UserSerializer(serializers.ModelSerializer):
         data['avatar'] = instance.avatar
         return data
     # validate password
+
+    def to_internal_value(self, data):
+        try:
+            return super().to_internal_value(data)
+        except serializers.ValidationError as exc:
+            errors = exc.detail
+            if 'username' in errors:
+                for i, msg in enumerate(errors['username']):
+                    if 'already exists' in msg or 'unique' in msg:
+                        errors['username'][i] = "Tên đăng nhập đã tồn tại!"
+            raise serializers.ValidationError(errors)
+
     def validate_password(self, password):
         if len(password) < 8:
             raise serializers.ValidationError(
@@ -64,7 +104,6 @@ class UserSerializer(serializers.ModelSerializer):
         user.set_password(validated_data['password'])
         user.save()
         return user
-
 
     def update(self, instance, validated_data):
         for attr, value in validated_data.items():
@@ -86,17 +125,18 @@ class VaccinationCampaignSerializer(serializers.ModelSerializer):
 class InjectionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Injection
-        fields = '__all__'
+        fields = ['id', 'vaccine', 'user', 'vaccination_campaign',
+                  'injection_time', 'number', 'active']
+        read_only_fields = ['id', 'active']
+
 
 class DoseSerializer(serializers.ModelSerializer):
     class Meta:
         model = Dose
         fields = '__all__'
 
+
 class VaccinationCampaignSerializer(serializers.ModelSerializer):
     class Meta:
         model = VaccinationCampaign
         fields = '__all__'
-
-
-
