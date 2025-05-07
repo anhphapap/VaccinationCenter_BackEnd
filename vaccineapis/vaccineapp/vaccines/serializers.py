@@ -42,35 +42,6 @@ class UserSerializer(serializers.ModelSerializer):
         fields = '__all__'
         extra_kwargs = {
             'password': {'write_only': True},
-            'phone': {
-                'error_messages': {
-                    'required': 'Bạn phải nhập số điện thoại'
-                }
-            },
-            'first_name': {
-                'required': True,
-                'error_messages': {
-                    'required': 'Bạn phải nhập họ'
-                }
-            },
-            'last_name': {
-                'required': True,
-                'error_messages': {
-                    'required': 'Bạn phải nhập tên'
-                }
-            },
-            'address': {
-                'required': True,
-                'error_messages': {
-                    'required': 'Bạn phải nhập địa chỉ'
-                }
-            },
-            'email': {
-                'required': True,
-                'error_messages': {
-                    'required': 'Bạn phải nhập email'
-                }
-            }
         }
 
     def to_representation(self, instance):
@@ -114,6 +85,75 @@ class UserSerializer(serializers.ModelSerializer):
 
         instance.save()
         return instance
+
+
+class UserRegisterSerializer(serializers.ModelSerializer):
+    password = serializers.CharField(write_only=True, required=True,
+                                     error_messages={'required': 'Bạn phải nhập mật khẩu'})
+    confirm_password = serializers.CharField(write_only=True, required=True,
+                                             error_messages={'required': 'Bạn phải xác nhận mật khẩu'})
+
+    class Meta:
+        model = User
+        fields = ['username', 'password', 'confirm_password']
+        extra_kwargs = {
+            'username': {
+                'required': True,
+                'error_messages': {
+                    'required': 'Bạn phải nhập tên đăng nhập'
+                }
+            }
+        }
+
+    def validate(self, data):
+        if data['password'] != data['confirm_password']:
+            raise serializers.ValidationError(
+                {"confirm_password": "Mật khẩu xác nhận không khớp"})
+        return data
+
+    def create(self, validated_data):
+        validated_data.pop('confirm_password')
+        user = User.objects.create_user(**validated_data)
+        return user
+
+
+class UserProfileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ['first_name', 'last_name', 'email',
+                  'phone', 'address', 'birth_date', 'gender']
+        extra_kwargs = {
+            'phone': {
+                'required': True,
+                'error_messages': {
+                    'required': 'Bạn phải nhập số điện thoại'
+                }
+            },
+            'first_name': {
+                'required': True,
+                'error_messages': {
+                    'required': 'Bạn phải nhập họ'
+                }
+            },
+            'last_name': {
+                'required': True,
+                'error_messages': {
+                    'required': 'Bạn phải nhập tên'
+                }
+            },
+            'address': {
+                'required': True,
+                'error_messages': {
+                    'required': 'Bạn phải nhập địa chỉ'
+                }
+            },
+            'email': {
+                'required': True,
+                'error_messages': {
+                    'required': 'Bạn phải nhập email'
+                }
+            }
+        }
 
 
 class VaccinationCampaignSerializer(serializers.ModelSerializer):

@@ -3,7 +3,7 @@ from rest_framework import viewsets, generics, status
 from rest_framework.decorators import action
 from rest_framework.request import Request
 from vaccines.models import Vaccine, Category, User, VaccinationCampaign, Dose, Injection
-from vaccines.serializers import VaccineSerializer, CategorySerializer, VaccineDetailSerializer, UserSerializer, VaccinationCampaignSerializer, InjectionSerializer, DoseSerializer
+from vaccines.serializers import VaccineSerializer, CategorySerializer, VaccineDetailSerializer, UserSerializer, VaccinationCampaignSerializer, InjectionSerializer, DoseSerializer, UserRegisterSerializer, UserProfileSerializer
 from vaccines.paginators import CategoryPaginator, VaccinePaginator, InjectionPaginator, UserPaginator, VaccinationCampaignPaginator, DosePaginator
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
@@ -84,7 +84,7 @@ class VaccineViewSet(viewsets.ViewSet, generics.RetrieveAPIView, generics.ListAP
         return queryset
 
 
-class UserViewSet(viewsets.ViewSet, generics.RetrieveUpdateAPIView, generics.CreateAPIView):
+class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.filter(is_active=True)
     serializer_class = UserSerializer
     pagination_class = UserPaginator
@@ -97,6 +97,10 @@ class UserViewSet(viewsets.ViewSet, generics.RetrieveUpdateAPIView, generics.Cre
         if self.action == 'retrieve':
             return [UserOwner()]
         return [IsAuthenticated()]
+    
+    def get_serializer_class(self):
+        if self.action == 'create':
+            return UserRegisterSerializer
 
     @action(detail=True, methods=['get'], url_path='injections', permission_classes=[UserOwner])
     def get_injections_by_user(self, request, username=None):
@@ -106,7 +110,7 @@ class UserViewSet(viewsets.ViewSet, generics.RetrieveUpdateAPIView, generics.Cre
         return Response(InjectionSerializer(injections, many=True).data, status=status.HTTP_200_OK)
 
     @action(detail=True, methods=['patch'], url_path='change-password', permission_classes=[UserOwner])
-    def change_password(self, request):
+    def change_password(self, request, username):
         user = request.user
         old_password = request.data.get('old_password')
         new_password = request.data.get('new_password')
