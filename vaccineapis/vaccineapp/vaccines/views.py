@@ -103,6 +103,7 @@ class UserViewSet(viewsets.ModelViewSet):
             return UserRegisterSerializer
         elif self.action == 'partical_update':
             return UserProfileSerializer
+        return UserSerializer
 
     @action(detail=True, methods=['get'], url_path='injections', permission_classes=[UserOwner])
     def get_injections_by_user(self, request, username=None):

@@ -39,6 +39,9 @@ class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = '__all__'
+        extra_kwargs = {
+            "password":{"write_only":True}
+        }
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
@@ -62,7 +65,6 @@ class UserRegisterSerializer(serializers.ModelSerializer):
                     'required': 'Bạn phải nhập tên đăng nhập'
                 }
             },
-            'password': {'write_only': True},
         }
 
     def validate(self, data):
