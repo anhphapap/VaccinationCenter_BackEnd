@@ -2,11 +2,12 @@ from django.db import models
 from ckeditor.fields import RichTextField
 from django.contrib.auth.models import AbstractUser
 from django.utils import timezone
+from enum import Enum
 
 
 class User(AbstractUser):
     avatar = models.CharField(
-        max_length=255, default='/static/images/avatar.png')
+        max_length=255)
     birth_date = models.DateField(null=True, blank=True)
     gender = models.BooleanField(default=True, null=True, blank=True)
     phone = models.CharField(
@@ -44,11 +45,7 @@ class Vaccine(BaseModel):
     id = models.CharField(max_length=255, primary_key=True)
     name = models.CharField(max_length=255)
     description = RichTextField()
-    origin = models.TextField()
     injection = RichTextField()
-    recommend = RichTextField()
-    manual = RichTextField()
-    preserve = RichTextField()
     patient = models.TextField()
     effects = RichTextField()
     disease = models.CharField(max_length=255)
@@ -77,6 +74,25 @@ class Dose(BaseModel):
         return f"Vaccine {self.vaccine.name} - Mũi {self.number}"
 
 
+class InjectionStatus(Enum):
+    NOT_VACCINATED = 'NOT_VACCINATED'
+    VACCINATED = 'VACCINATED'
+    MISSED = 'MISSED'
+
+    @classmethod
+    def choices(cls):
+        return [(status.value, status.name) for status in cls]
+
+    @classmethod
+    def get_display_name(cls, status_value):
+        display_names = {
+            'NOT_VACCINATED': 'Chưa tiêm',
+            'VACCINATED': 'Đã tiêm',
+            'MISSED': 'Bỏ lỡ'
+        }
+        return display_names.get(status_value, status_value)
+
+
 class Injection(BaseModel):
     vaccine = models.ForeignKey(
         Vaccine, on_delete=models.CASCADE, related_name='injections', null=True, blank=True)
@@ -85,14 +101,27 @@ class Injection(BaseModel):
     vaccination_campaign = models.ForeignKey(
         'VaccinationCampaign', on_delete=models.CASCADE, related_name='injections')
     injection_time = models.DateTimeField()
-    number = models.IntegerField(null=True, blank=True)
+    number = models.IntegerField(null=True, blank=True, default=1)
+    status = models.CharField(
+        max_length=20,
+        choices=InjectionStatus.choices(),
+        default=InjectionStatus.NOT_VACCINATED.value
+    )
+    note = models.TextField(null=True)
 
     def __str__(self):
         return f"{self.vaccine.name} - {self.user.username} - {self.injection_time}"
 
+    def get_status_display(self):
+        return InjectionStatus.get_display_name(self.status)
+
     class Meta:
         verbose_name = 'Lịch tiêm'
         verbose_name_plural = 'Lịch tiêm'
+        indexes = [
+            models.Index(fields=['user', 'vaccination_campaign', 'active']),
+            models.Index(fields=['injection_time']),
+        ]
 
 
 class VaccinationCampaign(BaseModel):
@@ -109,3 +138,34 @@ class VaccinationCampaign(BaseModel):
     class Meta:
         verbose_name = 'Đợt tiêm cộng đồng'
         verbose_name_plural = 'Đợt tiêm cộng đồng'
+
+
+class NotificationType(Enum):
+    PRIVATE = 'private'
+    PUBLIC = 'public'
+
+    @classmethod
+    def choices(cls):
+        return [(type.value, type.name) for type in cls]
+
+
+class Notification(BaseModel):
+    user = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name='notifications')
+    injection = models.ForeignKey(
+        Injection, on_delete=models.CASCADE, related_name='notifications')
+    title = models.CharField(max_length=255)
+    message = models.TextField()
+    is_read = models.BooleanField(default=False)
+    notification_date = models.DateTimeField(auto_now_add=True)
+    type = models.CharField(max_length=20,
+                            choices=NotificationType.choices(),
+                            default=NotificationType.PRIVATE)
+
+    def __str__(self):
+        return f"Notification for {self.user.username} - {self.title}"
+
+    class Meta:
+        verbose_name = 'Thông báo'
+        verbose_name_plural = 'Thông báo'
+        ordering = ['-notification_date']

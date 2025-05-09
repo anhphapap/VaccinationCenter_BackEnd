@@ -28,8 +28,10 @@ class VaccineAdmin(BaseAdmin):
 
 
 class InjectionAdmin(BaseAdmin):
-    list_display = ('vaccine', 'user', 'vaccination_campaign', 'injection_time')
-    search_fields = ('vaccine', 'user', 'vaccination_campaign', 'injection_time')
+    list_display = ('vaccine', 'user',
+                    'vaccination_campaign', 'injection_time')
+    search_fields = ('vaccine', 'user',
+                     'vaccination_campaign', 'injection_time')
     list_filter = ('vaccine', 'user', 'vaccination_campaign', 'injection_time')
 
 

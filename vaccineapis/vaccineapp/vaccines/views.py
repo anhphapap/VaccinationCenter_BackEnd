@@ -2,23 +2,14 @@ from django.http import HttpResponse
 from rest_framework import viewsets, generics, status
 from rest_framework.decorators import action
 from rest_framework.request import Request
-from vaccines.models import Vaccine, Category, User, VaccinationCampaign, Dose, Injection
-from vaccines.serializers import VaccineSerializer, CategorySerializer, VaccineDetailSerializer, UserSerializer, VaccinationCampaignSerializer, InjectionSerializer, DoseSerializer, UserRegisterSerializer, UserProfileSerializer, ChangePasswordSerializer
+from vaccines.models import Vaccine, Category, User, VaccinationCampaign, Dose, Injection, Notification
+from vaccines.serializers import VaccineSerializer, CategorySerializer, VaccineDetailSerializer, UserSerializer, VaccinationCampaignSerializer, InjectionSerializer, DoseSerializer, UserRegisterSerializer, UserProfileSerializer, ChangePasswordSerializer, NotificationSerializer
 from vaccines.paginators import CategoryPaginator, VaccinePaginator, InjectionPaginator, UserPaginator, VaccinationCampaignPaginator, DosePaginator
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework.permissions import AllowAny
 from vaccines.perms import IsStaff, UserOwner, InjectionOwner
-from django.db.models import Q, Count
-from functools import reduce
-import operator
-from reportlab.pdfgen import canvas
-from reportlab.lib.pagesizes import A4
-from reportlab.pdfbase import pdfmetrics
-from reportlab.pdfbase.ttfonts import TTFont
-from reportlab.lib import colors
-from io import BytesIO
-from django.utils import timezone
-from datetime import datetime
+
+from rest_framework import permissions
 
 
 class CategoryViewSet(viewsets.ViewSet, generics.ListAPIView):
@@ -94,21 +85,22 @@ class UserViewSet(viewsets.ModelViewSet):
     def get_permissions(self):
         if self.action == 'create':
             return [AllowAny()]
-        if self.action == 'retrieve':
-            return [UserOwner()]
-        return [IsAuthenticated()]
-    
+        if self.action in ['list'] or self.action in ['update', 'partical_update']:
+            return [IsStaff()]
+        return [UserOwner()]
+
     def get_serializer_class(self):
         if self.action == 'create':
             return UserRegisterSerializer
-        elif self.action == 'partical_update':
+        if self.action == 'partical_update':
             return UserProfileSerializer
         return UserSerializer
 
-    @action(detail=True, methods=['get'], url_path='injections', permission_classes=[UserOwner])
+    @action(detail=True, methods=['get'], url_path='injections')
     def get_injections_by_user(self, request, username=None):
         user = self.get_object()  # Điều này sẽ trigger has_object_permission
-        self.check_object_permissions(request, user)  # Bắt buộc phải gọi dòng này!
+        # Bắt buộc phải gọi dòng này!
+        self.check_object_permissions(request, user)
         injections = user.injections.filter(active=True)
         return Response(InjectionSerializer(injections, many=True).data, status=status.HTTP_200_OK)
 
@@ -135,7 +127,7 @@ class UserViewSet(viewsets.ModelViewSet):
     #     except Exception as e:
     #         return Response({'error': str(e)},
     #                         status=status.HTTP_400_BAD_REQUEST)
-    @action(detail=True, methods=['patch'], url_path='change-password', permission_classes=[UserOwner])
+    @action(detail=True, methods=['patch'], url_path='change-password')
     def change_password(self, request, username):
         user = request.user
         serializer = ChangePasswordSerializer(data=request.data)
