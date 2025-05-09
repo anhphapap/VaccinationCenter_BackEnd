@@ -15,7 +15,7 @@ class VaccineSerializer(serializers.ModelSerializer):
     class Meta:
         model = Vaccine
         fields = '__all__'
-        
+
     def get_cates(self, vaccine):
         return [{'id': category.id, 'name': category.name} for category in vaccine.cates.all()]
 
@@ -47,12 +47,10 @@ class UserSerializer(serializers.ModelSerializer):
 class UserRegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, required=True,
                                      error_messages={'required': 'Bạn phải nhập mật khẩu'})
-    confirm_password = serializers.CharField(write_only=True, required=True,
-                                             error_messages={'required': 'Bạn phải xác nhận mật khẩu'})
 
     class Meta:
         model = User
-        fields = ['username', 'password', 'confirm_password']
+        fields = ['username', 'password']
         extra_kwargs = {
             'username': {
                 'required': True,
@@ -61,12 +59,6 @@ class UserRegisterSerializer(serializers.ModelSerializer):
                 }
             },
         }
-
-    def validate(self, data):
-        if data['password'] != data['confirm_password']:
-            raise serializers.ValidationError(
-                {"confirm_password": "Mật khẩu xác nhận không khớp"})
-        return data
 
     def validate_password(self, password):
         if len(password) < 8:
