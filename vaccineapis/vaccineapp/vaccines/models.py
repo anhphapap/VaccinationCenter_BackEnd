@@ -149,6 +149,7 @@ class Notification(models.Model):
         abstract = True
 
 
+
 class PrivateNotification(Notification):
     injection = models.ForeignKey(
         Injection, on_delete=models.CASCADE, related_name='notifications', null=True, blank=True)
@@ -169,4 +170,14 @@ class PublicNotification(Notification):
 
 class NotificationStatus(models.Model):
     user = models.ForeignKey(
-        User, on_delete=models.CASCADE, related_name='injections')
+        User, on_delete=models.CASCADE, related_name='notification_status')
+    public_notification = models.ForeignKey(
+        PublicNotification, on_delete=models.CASCADE, related_name='notification_status')
+    is_read = models.BooleanField(default=False)
+
+    class Meta: 
+        unique_together = ('user', 'public_notification')
+        indexes = [
+            models.Index(fields=['user', 'is_read']),
+        ]
+    
