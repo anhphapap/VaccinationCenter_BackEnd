@@ -185,7 +185,7 @@ class InjectionSerializer(serializers.ModelSerializer):
 
             if existing_injection:
                 raise serializers.ValidationError(
-                    {"vaccination_campaign": "Bạn đã đăng ký đợt tiêm cộng đồng này trước đó"})
+                    {"error": "Bạn đã đăng ký đợt tiêm cộng đồng này trước đó"})
         return data
 
 

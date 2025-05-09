@@ -156,3 +156,11 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # CLIENT_ID = 'm8H0JMoxBgJTUFHvW6f2a29kf23udVTHoT5Ig1pg'
 # CLIENT_SECRET = '977cvBKgFvVg44A6s26bA5E4mvGUfMrQSUyQRrzzoAl3Uh2ADYpN1GcsDeObHdlNGCYnbCyytN3Z5EMArz6fxEnDbTJ58sEAXZMwG4MW6qJof4rENph8oKvqA68KJToP'
+
+# settings.py
+CELERY_BEAT_SCHEDULE = {
+    'check-upcoming-injections': {
+        'task': 'vaccines.tasks.check_upcoming_injections',
+        'schedule': 300.0,
+    },
+}

@@ -140,27 +140,19 @@ class VaccinationCampaign(BaseModel):
         verbose_name_plural = 'Đợt tiêm cộng đồng'
 
 
-class NotificationType(Enum):
-    PRIVATE = 'private'
-    PUBLIC = 'public'
-
-    @classmethod
-    def choices(cls):
-        return [(type.value, type.name) for type in cls]
-
-
-class Notification(BaseModel):
-    user = models.ForeignKey(
-        User, on_delete=models.CASCADE, related_name='notifications')
-    injection = models.ForeignKey(
-        Injection, on_delete=models.CASCADE, related_name='notifications')
+class Notification(models.Model):
     title = models.CharField(max_length=255)
     message = models.TextField()
-    is_read = models.BooleanField(default=False)
     notification_date = models.DateTimeField(auto_now_add=True)
-    type = models.CharField(max_length=20,
-                            choices=NotificationType.choices(),
-                            default=NotificationType.PRIVATE)
+
+    class Meta:
+        abstract = True
+
+
+class PrivateNotification(Notification):
+    injection = models.ForeignKey(
+        Injection, on_delete=models.CASCADE, related_name='notifications', null=True, blank=True)
+    is_read = models.BooleanField(default=False)
 
     def __str__(self):
         return f"Notification for {self.user.username} - {self.title}"
@@ -169,3 +161,12 @@ class Notification(BaseModel):
         verbose_name = 'Thông báo'
         verbose_name_plural = 'Thông báo'
         ordering = ['-notification_date']
+
+
+class PublicNotification(Notification):
+    vaccine_campaign = models.ForeignKey(VaccinationCampaign, on_delete=models.CASCADE, related_name='public_notification')
+
+
+class NotificationStatus(models.Model):
+    user = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name='injections')
