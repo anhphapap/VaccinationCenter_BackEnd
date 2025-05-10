@@ -86,7 +86,7 @@ class UserViewSet(viewsets.ModelViewSet):
             return [AllowAny()]
         elif self.action in ['delete', 'list']:
             return [IsStaff()]
-        return [IsStaff() | UserOwner()] 
+        return [IsStaff(), UserOwner()]
 
     def get_serializer_class(self):
         if self.action == 'create':
