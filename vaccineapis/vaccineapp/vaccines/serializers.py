@@ -170,7 +170,7 @@ class InjectionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Injection
         fields = ['id', 'vaccine', 'user', 'vaccination_campaign',
-                  'injection_time', 'number', 'active']
+                  'injection_time', 'number', 'active', 'status']
 
     def validate(self, data):
         user = data.get('user')

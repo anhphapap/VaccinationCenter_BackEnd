@@ -16,10 +16,6 @@ app.autodiscover_tasks()
 
 # Configure periodic tasks
 app.conf.beat_schedule = {
-    'check-upcoming-injections': {
-        'task': 'vaccines.tasks.check_upcoming_injections',
-        'schedule': crontab(hour='*/24'),  # Run every 24 hours
-    },
     'send-injection-reminder': {
         'task': 'vaccines.tasks.send_injection_reminder',
         'schedule': crontab(minute='*/1'),  # Run every minute
