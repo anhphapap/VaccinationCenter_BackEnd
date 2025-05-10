@@ -1,9 +1,7 @@
 from celery import shared_task
 from django.utils import timezone
 from datetime import timedelta
-from .models import Injection, Notification
-
-
+from .models import Injection, PrivateNotification
 
 
 @shared_task
@@ -22,7 +20,7 @@ def send_injection_reminder():
         message = f"Bạn có lịch tiêm {injection.vaccine.name} trong 5 phút nữa. "
         message += f"Vui lòng chuẩn bị và đến đúng giờ!"
 
-        Notification.objects.create(
+        PrivateNotification.objects.create(
             user=injection.user,
             injection=injection,
             title=title,

@@ -81,13 +81,12 @@ class UserViewSet(viewsets.ModelViewSet):
     pagination_class = UserPaginator
     lookup_field = 'username'
 
-    # phan quyen
     def get_permissions(self):
         if self.action == 'create':
             return [AllowAny()]
-        if self.action in ['list'] or self.action in ['update', 'partical_update']:
+        elif self.action in ['delete', 'list']:
             return [IsStaff()]
-        return [UserOwner()]
+        return [IsStaff() | UserOwner()] 
 
     def get_serializer_class(self):
         if self.action == 'create':
@@ -138,24 +137,34 @@ class InjectionViewSet(viewsets.ModelViewSet):
         user = self.request.user
         sort_by = self.request.query_params.get('sort_by')
         status = self.request.query_params.get('status')
-        
-        if user.is_staff:
-            queryset = queryset.filter(active=True)
-        else:
+        vaccine = self.request.query_params.get('vaccine')
+        injection_date = self.request.query_params.get('injection_date')
+
+        # Lọc theo tên vaccine (chỉ cho user)
+        if not user.is_staff and vaccine:
+            queryset = queryset.filter(vaccine__name__icontains=vaccine)
+
+        # Phân quyền xem injection
+        if not user.is_staff:
             queryset = queryset.filter(user=user)
 
+        # Lọc theo status (cho cả staff và user)
         if status:
             queryset = queryset.filter(status__iexact=status)
 
+        # Lọc theo ngày tiêm (chỉ cho staff)
+        if user.is_staff and injection_date:
+            queryset = queryset.filter(injection_time__date=injection_date)
+
+        # Sắp xếp theo ngày (cho cả staff và user)
         if sort_by == 'date_asc':
             queryset = queryset.order_by('injection_time', 'id')
         elif sort_by == 'date_desc':
             queryset = queryset.order_by('-injection_time', 'id')
         else:
             queryset = queryset.order_by('id')
-        
-        return queryset
 
+        return queryset
 
     def get_permissions(self):
         if self.action == 'put' or self.action == 'patch' or self.action == 'delete':
