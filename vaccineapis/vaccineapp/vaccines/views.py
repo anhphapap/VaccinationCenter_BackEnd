@@ -84,9 +84,11 @@ class UserViewSet(viewsets.ModelViewSet):
     def get_permissions(self):
         if self.action == 'create':
             return [AllowAny()]
-        elif self.action in ['delete', 'list']:
+        elif self.action in ['retrieve', 'list', 'update', 'partial_update', 'delete'] and self.request.user.is_staff:
             return [IsStaff()]
-        return [IsStaff(), UserOwner()]
+        elif self.action in ['retrieve', 'update', 'partial_update', 'delete']:
+            return [UserOwner()]
+        return [IsStaff()]
 
     def get_serializer_class(self):
         if self.action == 'create':
