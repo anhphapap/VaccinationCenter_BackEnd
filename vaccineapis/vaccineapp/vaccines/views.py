@@ -228,7 +228,7 @@ class UserViewSet(viewsets.ModelViewSet):
 class InjectionViewSet(viewsets.ModelViewSet):
     serializer_class = InjectionSerializer
     pagination_class = InjectionPaginator
-    permission_classes = [IsStaff]
+    # permission_classes = [IsStaff]
 
     def get_queryset(self):
         queryset = Injection.objects.filter(active=True)
@@ -255,6 +255,11 @@ class InjectionViewSet(viewsets.ModelViewSet):
             queryset = queryset.order_by('id')
 
         return queryset
+    
+    def get_permissions(self):
+        if self.action == 'create':
+            return [UserOwner()]
+        return [IsStaff()]
 
 
 class VaccinationCampaignViewSet(viewsets.ModelViewSet):
