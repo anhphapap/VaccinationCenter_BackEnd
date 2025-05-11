@@ -159,8 +159,8 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # settings.py
 CELERY_BEAT_SCHEDULE = {
-    'check-upcoming-injections': {
-        'task': 'vaccines.tasks.check_upcoming_injections',
+    'send-injection-reminder': {
+        'task': 'vaccines.tasks.send_injection_reminder',
         'schedule': 300.0,
     },
 }
