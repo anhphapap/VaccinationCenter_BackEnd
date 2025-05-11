@@ -99,10 +99,29 @@ class UserViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['get'], url_path='injections')
     def get_injections_by_user(self, request, username=None):
-        user = self.get_object()  # Điều này sẽ trigger has_object_permission
-        # Bắt buộc phải gọi dòng này!
-        self.check_object_permissions(request, user)
+        user = self.get_object()
+        # self.check_object_permissions(request, user)
         injections = user.injections.filter(active=True)
+        sort_by = self.request.query_params.get('sort_by')
+        status_param = self.request.query_params.get('status')
+        vaccine = self.request.query_params.get('vaccine')
+        injection_date = self.request.query_params.get('injection_date')
+
+        if vaccine:
+            injections = injections.filter(vaccine__name__icontains=vaccine)
+
+        if status_param:
+            injections = injections.filter(status__iexact=status_param)
+
+        if injection_date:
+            injections = injections.filter(injection_time__date=injection_date)
+
+        if sort_by == 'date_asc':
+            injections = injections.order_by('injection_time', 'id')
+        elif sort_by == 'date_desc':
+            injections = injections.order_by('-injection_time', 'id')
+        else:
+            injections = injections.order_by('id')
         return Response(InjectionSerializer(injections, many=True).data, status=status.HTTP_200_OK)
 
     @action(detail=True, methods=['patch'], url_path='change-password')
@@ -133,6 +152,7 @@ class UserViewSet(viewsets.ModelViewSet):
 class InjectionViewSet(viewsets.ModelViewSet):
     serializer_class = InjectionSerializer
     pagination_class = InjectionPaginator
+    permission_classes = [IsStaff]
 
     def get_queryset(self):
         queryset = Injection.objects.filter(active=True)
@@ -142,23 +162,15 @@ class InjectionViewSet(viewsets.ModelViewSet):
         vaccine = self.request.query_params.get('vaccine')
         injection_date = self.request.query_params.get('injection_date')
 
-        # Lọc theo tên vaccine (chỉ cho user)
-        if not user.is_staff and vaccine:
+        if vaccine:
             queryset = queryset.filter(vaccine__name__icontains=vaccine)
 
-        # Phân quyền xem injection
-        if not user.is_staff:
-            queryset = queryset.filter(user=user)
-
-        # Lọc theo status (cho cả staff và user)
         if status:
             queryset = queryset.filter(status__iexact=status)
 
-        # Lọc theo ngày tiêm (chỉ cho staff)
-        if user.is_staff and injection_date:
+        if injection_date:
             queryset = queryset.filter(injection_time__date=injection_date)
 
-        # Sắp xếp theo ngày (cho cả staff và user)
         if sort_by == 'date_asc':
             queryset = queryset.order_by('injection_time', 'id')
         elif sort_by == 'date_desc':
@@ -168,10 +180,6 @@ class InjectionViewSet(viewsets.ModelViewSet):
 
         return queryset
 
-    def get_permissions(self):
-        if self.action == 'put' or self.action == 'patch' or self.action == 'delete':
-            return [IsStaff()]
-        return [InjectionOwner()]
 
 
 class VaccinationCampaignViewSet(viewsets.ModelViewSet):
