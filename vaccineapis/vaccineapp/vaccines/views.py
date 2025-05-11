@@ -10,7 +10,15 @@ from rest_framework.permissions import AllowAny
 from vaccines.perms import IsStaff, UserOwner, InjectionOwner
 from reportlab.pdfgen import canvas
 from django.http import HttpResponse
-from rest_framework import permissions
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
+from reportlab.lib.pagesizes import A4
+from reportlab.lib.units import mm
+import os
+
+# Đăng ký font Arial
+FONT_PATH = os.path.join(os.path.dirname(__file__), 'fonts', 'arial.ttf')
+pdfmetrics.registerFont(TTFont('Arial', FONT_PATH))
 
 
 class CategoryViewSet(viewsets.ViewSet, generics.ListAPIView):
@@ -148,7 +156,7 @@ class UserViewSet(viewsets.ModelViewSet):
                                 status=status.HTTP_400_BAD_REQUEST)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
+
     @action(detail=True, methods=['get'], url_path='injection-certificate/(?P<injection_id>[^/.]+)')
     def download_injection_certificate(self, request, username=None, injection_id=None):
         user = self.get_object()
@@ -157,37 +165,70 @@ class UserViewSet(viewsets.ModelViewSet):
         except Injection.DoesNotExist:
             return Response({'error': 'Injection không tồn tại hoặc không thuộc về user này'}, status=status.HTTP_404_NOT_FOUND)
 
-    # Tạo file PDF
         response = HttpResponse(content_type='application/pdf')
         response['Content-Disposition'] = f'attachment; filename="certificate_{user.username}_injection_{injection.id}.pdf"'
+        p = canvas.Canvas(response, pagesize=A4)
+        width, height = A4
+        margin = 20 * mm
 
-        p = canvas.Canvas(response)
-        p.setFont("Helvetica-Bold", 16)
-        p.drawString(100, 800, f"Giấy chứng nhận tiêm chủng")
-        p.setFont("Helvetica", 12)
-        p.drawString(100, 780, f"Họ tên: {user.get_full_name()}")
-        p.drawString(100, 760, f"Username: {user.username}")
-        p.drawString(100, 740, f"Số điện thoại: {user.phone or ''}")
+        # Quốc hiệu
+        p.setFont("Arial", 12)
+        p.drawCentredString(width/2, height - margin,
+                            "CỘNG HOÀ XÃ HỘI CHỦ NGHĨA VIỆT NAM")
+        p.setFont("Arial", 11)
+        p.drawCentredString(width/2, height - margin - 18,
+                            "Độc lập - Tự do - Hạnh phúc")
+        p.line(width/2 - 60, height - margin - 21,
+               width/2 + 60, height - margin - 21)
 
-        y = 700
-        p.setFont("Helvetica-Bold", 12)
-        p.drawString(100, y, "Thông tin mũi tiêm:")
-        y -= 20
-        p.setFont("Helvetica", 11)
-        p.drawString(110, y, f"Vaccine: {injection.vaccine.name}")
+        # Tiêu đề
+        p.setFont("Arial", 16)
+        p.drawCentredString(width/2, height - margin - 45,
+                            "GIẤY XÁC NHẬN ĐÃ TIÊM VẮC XIN")
+
+        # Thông tin cá nhân
+        y = height - margin - 75
+        p.setFont("Arial", 12)
+        p.drawString(margin, y, f"Họ và tên: {user.get_full_name()}")
         y -= 18
-        p.drawString(110, y, f"Số mũi: {injection.number}")
+        p.drawString(
+            margin, y, f"Sinh ngày: {user.birth_date.strftime('%d/%m/%Y') if user.birth_date else ''}    Giới tính: {'Nam' if user.gender else 'Nữ'}")
         y -= 18
-        p.drawString(110, y, f"Ngày tiêm: {injection.injection_time.strftime('%d/%m/%Y')}")
+        p.drawString(margin, y, f"Số điện thoại: {user.phone or ''}")
         y -= 18
-        p.drawString(110, y, f"Trạng thái: {injection.get_status_display()}")
+        p.drawString(margin, y, f"Địa chỉ: {user.address or ''}")
+
+        # Thông tin mũi tiêm
+        y -= 30
+        p.setFont("Arial", 12)
+        p.drawString(margin, y, "Thông tin mũi tiêm:")
         y -= 18
+        p.setFont("Arial", 11)
+        p.drawString(margin + 20, y, f"Vaccine: {injection.vaccine.name}")
+        y -= 16
+        p.drawString(margin + 20, y, f"Số mũi: {injection.number}")
+        y -= 16
+        p.drawString(
+            margin + 20, y, f"Thời gian tiêm: {injection.injection_time.strftime('%H:%M, ngày %d/%m/%Y')}")
+        y -= 16
+        p.drawString(margin + 20, y,
+                     f"Trạng thái: {injection.get_status_display()}")
+        y -= 16
         if injection.note:
-            p.drawString(110, y, f"Ghi chú: {injection.note}")
+            p.drawString(margin + 20, y, f"Ghi chú: {injection.note}")
+
+        # Chữ ký
+        y -= 40
+        p.setFont("Arial", 12)
+        p.drawRightString(width - margin, y, "Đơn vị tiêm chủng")
+        y -= 16
+        p.setFont("Arial", 10)
+        p.drawRightString(width - margin, y, "(Ký, đóng dấu)")
 
         p.showPage()
         p.save()
         return response
+
 
 class InjectionViewSet(viewsets.ModelViewSet):
     serializer_class = InjectionSerializer
@@ -219,7 +260,6 @@ class InjectionViewSet(viewsets.ModelViewSet):
             queryset = queryset.order_by('id')
 
         return queryset
-
 
 
 class VaccinationCampaignViewSet(viewsets.ModelViewSet):
