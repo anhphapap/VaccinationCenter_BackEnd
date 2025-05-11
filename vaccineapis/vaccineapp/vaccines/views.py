@@ -149,24 +149,21 @@ class UserViewSet(viewsets.ModelViewSet):
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
-    @action(detail=True, methods=['get'], url_path='certificate/(?P<vaccine_id>[^/.]+)')
-    def download_vaccine_certificate(self, request, username=None, vaccine_id=None):
+    @action(detail=True, methods=['get'], url_path='injection-certificate/(?P<injection_id>[^/.]+)')
+    def download_injection_certificate(self, request, username=None, injection_id=None):
         user = self.get_object()
         try:
-            vaccine = Vaccine.objects.get(id=vaccine_id)
-        except Vaccine.DoesNotExist:
-            return Response({'error': 'Vaccine không tồn tại'}, status=status.HTTP_404_NOT_FOUND)
+            injection = Injection.objects.get(id=injection_id, user=user)
+        except Injection.DoesNotExist:
+            return Response({'error': 'Injection không tồn tại hoặc không thuộc về user này'}, status=status.HTTP_404_NOT_FOUND)
 
-        # Lấy tất cả các mũi tiêm của user với vaccine này
-        injections = user.injections.filter(vaccine=vaccine).order_by('number')
-
-        # Tạo file PDF
+    # Tạo file PDF
         response = HttpResponse(content_type='application/pdf')
-        response['Content-Disposition'] = f'attachment; filename="certificate_{user.username}_{vaccine.name}.pdf"'
+        response['Content-Disposition'] = f'attachment; filename="certificate_{user.username}_injection_{injection.id}.pdf"'
 
         p = canvas.Canvas(response)
         p.setFont("Helvetica-Bold", 16)
-        p.drawString(100, 800, f"Giấy chứng nhận tiêm chủng vaccine: {vaccine.name}")
+        p.drawString(100, 800, f"Giấy chứng nhận tiêm chủng")
         p.setFont("Helvetica", 12)
         p.drawString(100, 780, f"Họ tên: {user.get_full_name()}")
         p.drawString(100, 760, f"Username: {user.username}")
@@ -174,18 +171,19 @@ class UserViewSet(viewsets.ModelViewSet):
 
         y = 700
         p.setFont("Helvetica-Bold", 12)
-        p.drawString(100, y, "Trạng thái các mũi tiêm:")
+        p.drawString(100, y, "Thông tin mũi tiêm:")
         y -= 20
         p.setFont("Helvetica", 11)
-        for inj in injections:
-            p.drawString(
-                110, y,
-                f"- Mũi số: {inj.number} | Ngày: {inj.injection_time.strftime('%d/%m/%Y')} | Trạng thái: {inj.get_status_display()}"
-            )
-            y -= 18
-            if y < 50:
-                p.showPage()
-                y = 800
+        p.drawString(110, y, f"Vaccine: {injection.vaccine.name}")
+        y -= 18
+        p.drawString(110, y, f"Số mũi: {injection.number}")
+        y -= 18
+        p.drawString(110, y, f"Ngày tiêm: {injection.injection_time.strftime('%d/%m/%Y')}")
+        y -= 18
+        p.drawString(110, y, f"Trạng thái: {injection.get_status_display()}")
+        y -= 18
+        if injection.note:
+            p.drawString(110, y, f"Ghi chú: {injection.note}")
 
         p.showPage()
         p.save()
