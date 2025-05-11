@@ -164,3 +164,4 @@ CELERY_BEAT_SCHEDULE = {
         'schedule': 300.0,
     },
 }
+CELERY_BROKER_URL = os.environ.get('CELERY_BROKER_URL')

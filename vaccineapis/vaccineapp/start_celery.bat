@@ -1,5 +1,4 @@
 @echo off
-REM Khởi động Celery worker
+call D:\VaccinationCenter_BackEnd\venv\Scripts\activate.bat
 start cmd /k "celery -A vaccineapp worker -l info"
-REM Khởi động Celery beat
 start cmd /k "celery -A vaccineapp beat -l info"

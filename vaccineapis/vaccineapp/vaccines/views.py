@@ -171,7 +171,6 @@ class UserViewSet(viewsets.ModelViewSet):
         width, height = A4
         margin = 20 * mm
 
-        # Quốc hiệu
         p.setFont("Arial", 12)
         p.drawCentredString(width/2, height - margin,
                             "CỘNG HOÀ XÃ HỘI CHỦ NGHĨA VIỆT NAM")
@@ -181,12 +180,10 @@ class UserViewSet(viewsets.ModelViewSet):
         p.line(width/2 - 60, height - margin - 21,
                width/2 + 60, height - margin - 21)
 
-        # Tiêu đề
         p.setFont("Arial", 16)
         p.drawCentredString(width/2, height - margin - 45,
                             "GIẤY XÁC NHẬN ĐÃ TIÊM VẮC XIN")
 
-        # Thông tin cá nhân
         y = height - margin - 75
         p.setFont("Arial", 12)
         p.drawString(margin, y, f"Họ và tên: {user.get_full_name()}")
@@ -198,7 +195,6 @@ class UserViewSet(viewsets.ModelViewSet):
         y -= 18
         p.drawString(margin, y, f"Địa chỉ: {user.address or ''}")
 
-        # Thông tin mũi tiêm
         y -= 30
         p.setFont("Arial", 12)
         p.drawString(margin, y, "Thông tin mũi tiêm:")
@@ -217,7 +213,6 @@ class UserViewSet(viewsets.ModelViewSet):
         if injection.note:
             p.drawString(margin + 20, y, f"Ghi chú: {injection.note}")
 
-        # Chữ ký
         y -= 40
         p.setFont("Arial", 12)
         p.drawRightString(width - margin, y, "Đơn vị tiêm chủng")
