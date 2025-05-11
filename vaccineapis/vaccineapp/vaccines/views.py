@@ -8,7 +8,8 @@ from vaccines.paginators import CategoryPaginator, VaccinePaginator, InjectionPa
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny
 from vaccines.perms import IsStaff, UserOwner, InjectionOwner
-
+from reportlab.pdfgen import canvas
+from django.http import HttpResponse
 from rest_framework import permissions
 
 
@@ -147,7 +148,48 @@ class UserViewSet(viewsets.ModelViewSet):
                                 status=status.HTTP_400_BAD_REQUEST)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    @action(detail=True, methods=['get'], url_path='certificate/(?P<vaccine_id>[^/.]+)')
+    def download_vaccine_certificate(self, request, username=None, vaccine_id=None):
+        user = self.get_object()
+        try:
+            vaccine = Vaccine.objects.get(id=vaccine_id)
+        except Vaccine.DoesNotExist:
+            return Response({'error': 'Vaccine không tồn tại'}, status=status.HTTP_404_NOT_FOUND)
 
+        # Lấy tất cả các mũi tiêm của user với vaccine này
+        injections = user.injections.filter(vaccine=vaccine).order_by('number')
+
+        # Tạo file PDF
+        response = HttpResponse(content_type='application/pdf')
+        response['Content-Disposition'] = f'attachment; filename="certificate_{user.username}_{vaccine.name}.pdf"'
+
+        p = canvas.Canvas(response)
+        p.setFont("Helvetica-Bold", 16)
+        p.drawString(100, 800, f"Giấy chứng nhận tiêm chủng vaccine: {vaccine.name}")
+        p.setFont("Helvetica", 12)
+        p.drawString(100, 780, f"Họ tên: {user.get_full_name()}")
+        p.drawString(100, 760, f"Username: {user.username}")
+        p.drawString(100, 740, f"Số điện thoại: {user.phone or ''}")
+
+        y = 700
+        p.setFont("Helvetica-Bold", 12)
+        p.drawString(100, y, "Trạng thái các mũi tiêm:")
+        y -= 20
+        p.setFont("Helvetica", 11)
+        for inj in injections:
+            p.drawString(
+                110, y,
+                f"- Mũi số: {inj.number} | Ngày: {inj.injection_time.strftime('%d/%m/%Y')} | Trạng thái: {inj.get_status_display()}"
+            )
+            y -= 18
+            if y < 50:
+                p.showPage()
+                y = 800
+
+        p.showPage()
+        p.save()
+        return response
 
 class InjectionViewSet(viewsets.ModelViewSet):
     serializer_class = InjectionSerializer
