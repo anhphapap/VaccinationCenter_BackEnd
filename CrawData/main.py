@@ -47,7 +47,6 @@ def vaccin_info():
             urls.append({
                 "link" : e.get_attribute('href'),
                 "slug" : e.get_attribute('href').strip('/').split('/')[-1],
-                "image" : img[idx].get_attribute('src')
             })
         if(i <= 5):
             driver.get(f'https://vnvc.vn/thong-tin-san-pham-vac-xin/page/{i}')
@@ -57,22 +56,15 @@ def vaccin_info():
     for u in urls:
         driver.get(u['link'])
         d = {
-            "ten" : get_text(driver, 'title_thong_in_vacxin', 'class'),
-            "mo_ta" : get_html(driver, '.content_item_list > p:nth-child(1)', 'css'),
-            "nguon_goc" : get_html(driver , '//*[@id="1-thong-tin-vac-xin"]/div/h3[1]/following-sibling::*[1]', 'xpath'),
-            "duong_tiem" : get_html(driver, '//*[@id="1-thong-tin-vac-xin"]/div/h3[2]/following-sibling::*[1]', 'xpath'),
-            "chong_chi_dinh" : get_html(driver, '//*[@id="1-thong-tin-vac-xin"]/div/h3[3]/following-sibling::*[1]', 'xpath'),
-            "hdsd" : get_html(driver, '//*[@id="1-thong-tin-vac-xin"]/div/h3[4]/following-sibling::*[1]', 'xpath'),
-            "bao_quan" : get_html(driver, '//*[@id="1-thong-tin-vac-xin"]/div/h3[last()]/following-sibling::*[1]', 'xpath'),
+            "mo_ta" : get_html(driver=driver, text="//h2[contains(text(), 'Thông tin vắc xin')]/following-sibling::*",type="xpath"),
             "doi_tuong" : get_html(driver=driver, text="//h2[contains(text(), 'Đối tượng')]/following-sibling::*",type="xpath"),
             "lich_tiem" : get_html(driver=driver,text="//h2[contains(text(), 'Phác đồ')]/following-sibling::*",type="xpath"),
-            "phan_ung" : get_html(driver=driver, text="//h2[contains(text(), 'Phản ứng sau tiêm')]/following-sibling::*",type="xpath"),
+            "phan_ung" : get_html(driver=driver, text="//h2[contains(text(), 'Phản ứng')]/following-sibling::*",type="xpath"),
             "slug" : u['slug'],
-            'image' : u['image']
         }
         data.append(d)
 
-    with open("vaccines.csv", mode="w", encoding="utf-8", newline="") as f:
+    with open("vaccines_new2.csv", mode="w", encoding="utf-8", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=data[0].keys())
         writer.writeheader()
         writer.writerows(data)
