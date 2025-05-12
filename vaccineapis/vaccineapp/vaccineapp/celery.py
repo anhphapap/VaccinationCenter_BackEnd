@@ -13,7 +13,11 @@ app.config_from_object('django.conf:settings', namespace='CELERY')
 
 # Load task modules from all registered Django app configs.
 app.autodiscover_tasks()
-
+@app.task(name='vaccines.tasks.send_injection_reminder')
+def send_injection_reminder():
+    # Chỉ là proxy task, gọi đến hàm thực tế trong vaccines.tasks
+    from vaccines.tasks import send_injection_reminder as real_task
+    return real_task()
 # Configure periodic tasks
 app.conf.beat_schedule = {
     'send-injection-reminder': {
