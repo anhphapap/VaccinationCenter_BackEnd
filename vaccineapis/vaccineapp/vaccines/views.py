@@ -234,7 +234,7 @@ class InjectionViewSet(viewsets.ModelViewSet):
         queryset = Injection.objects.filter(active=True)
         user = self.request.user
         sort_by = self.request.query_params.get('sort_by')
-        status = self.request.query_params.get('status')
+        status = self.request.query_params.getlist('status')
         vaccine = self.request.query_params.get('vaccine')
         injection_date = self.request.query_params.get('injection_date')
 
@@ -242,7 +242,8 @@ class InjectionViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(vaccine__name__icontains=vaccine)
 
         if status:
-            queryset = queryset.filter(status__iexact=status)
+            status_ids = [s for s in status]
+            queryset = queryset.filter(status__in=status_ids).distinct()
 
         if injection_date:
             queryset = queryset.filter(injection_time__date=injection_date)
