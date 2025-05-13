@@ -26,4 +26,6 @@ REM Khởi động Celery beat
 echo Khoi dong Celery beat...
 start cmd /k "celery -A vaccineapp beat -l info"
 
-echo Celery da duoc khoi dong!
+
+echo Celery da duoc khoi dong! 
+
