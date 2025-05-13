@@ -29,30 +29,4 @@ def send_injection_reminder():
         )
 
 
-@shared_task
-def send_campaign_notification(campaign_id):
-    from .models import VaccinationCampaign
-    try:
-        campaign = VaccinationCampaign.objects.get(id=campaign_id)
 
-        # Create public notification
-        notification = PublicNotification.objects.create(
-            title=f"Đợt tiêm chủng mới: {campaign.name}",
-            message=campaign.description,
-            vaccine_campaign=campaign
-        )
-
-        # Create notification status for all active users
-        users = User.objects.filter(is_active=True)
-        notification_statuses = [
-            NotificationStatus(
-                user=user,
-                public_notification=notification,
-                is_read=False
-            ) for user in users
-        ]
-        NotificationStatus.objects.bulk_create(notification_statuses)
-
-        return f"Successfully sent notifications for campaign {campaign.name}"
-    except VaccinationCampaign.DoesNotExist:
-        return f"Campaign with id {campaign_id} does not exist"
