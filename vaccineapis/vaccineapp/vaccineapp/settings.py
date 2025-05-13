@@ -10,6 +10,9 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
+from django.utils import timezone
+import os
+import pymysql
 import ssl
 from pathlib import Path
 from decouple import config
@@ -32,7 +35,6 @@ DEBUG = True
 
 ALLOWED_HOSTS = ["*"]
 
-import pymysql
 pymysql.install_as_MySQLdb()
 
 # Application definition
@@ -51,7 +53,7 @@ INSTALLED_APPS = [
     'drf_yasg',
     'oauth2_provider',
     'corsheaders',
-    ]
+]
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
@@ -73,7 +75,6 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 MIDDLEWARE.insert(1, 'whitenoise.middleware.WhiteNoiseMiddleware')
-import os
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 CORS_ALLOW_ALL_ORIGINS = True
 AUTH_USER_MODEL = 'vaccines.User'
@@ -171,3 +172,5 @@ CELERY_BROKER_USE_SSL = {
     'ssl_cert_reqs': ssl.CERT_NONE,
     'ssl_check_hostname': False,
 }
+
+print(timezone.now())
