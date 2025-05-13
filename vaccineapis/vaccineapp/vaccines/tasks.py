@@ -17,6 +17,7 @@ def send_injection_reminder():
     for injection in upcoming_injections:
         # Create notification
         title = f"NHẮC NHỞ: Lịch tiêm {injection.vaccine.name} sắp đến"
+        print(injection.vaccine)
         message = f"Bạn có lịch tiêm {injection.vaccine.name} trong vòng 3 ngày tới. "
         message += f"Vui lòng chuẩn bị và đến đúng giờ!"
 
