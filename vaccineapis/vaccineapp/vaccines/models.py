@@ -151,6 +151,7 @@ class Notification(models.Model):
 
 
 class PrivateNotification(Notification):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='private_notifications', null=True)
     injection = models.ForeignKey(
         Injection, on_delete=models.CASCADE, related_name='notifications', null=True, blank=True)
     is_read = models.BooleanField(default=False)
