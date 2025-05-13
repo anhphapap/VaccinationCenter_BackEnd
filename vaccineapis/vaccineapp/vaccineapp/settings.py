@@ -161,14 +161,10 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # settings.py
 CELERY_BEAT_SCHEDULE = {
-    # 'send-injection-reminder': {
-    #     'task': 'vaccines.tasks.send_injection_reminder',
-    #     'schedule': 60.0,
-    # },
-    'send-campaign-notification': {
-        'task': 'vaccines.tasks.send_campaign_notification',
-        'schedule': 60.0,
-    }
+    'send-injection-reminder': {
+        'task': 'vaccines.tasks.send_injection_reminder',
+        'schedule': 86400.0,
+    },
 }
 CELERY_BROKER_URL = os.environ.get('CELERY_BROKER_URL')
 
