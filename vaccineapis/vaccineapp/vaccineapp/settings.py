@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
+import ssl
 from pathlib import Path
 from decouple import config
 
@@ -165,3 +166,8 @@ CELERY_BEAT_SCHEDULE = {
     },
 }
 CELERY_BROKER_URL = os.environ.get('CELERY_BROKER_URL')
+
+CELERY_BROKER_USE_SSL = {
+    'ssl_cert_reqs': ssl.CERT_NONE,
+    'ssl_check_hostname': False,
+}

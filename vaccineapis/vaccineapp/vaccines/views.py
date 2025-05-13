@@ -15,6 +15,7 @@ from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import mm
 import os
+from .tasks import send_campaign_notification
 
 # Đăng ký font Arial
 FONT_PATH = os.path.join(os.path.dirname(__file__), 'fonts', 'arial.ttf')
@@ -256,7 +257,7 @@ class InjectionViewSet(viewsets.ModelViewSet):
             queryset = queryset.order_by('id')
 
         return queryset
-    
+
     def get_permissions(self):
         if self.action == 'create':
             return [UserOwner()]
@@ -274,6 +275,12 @@ class VaccinationCampaignViewSet(viewsets.ModelViewSet):
         if self.request.method.__eq__('GET'):
             return [AllowAny()]
         return [IsStaff()]
+
+    def perform_create(self, serializer):
+        campaign = serializer.save()
+        # Send notification asynchronously
+        send_campaign_notification.delay(campaign.id)
+        return campaign
 
     @action(detail=True, methods=['get'], url_path='injections', permission_classes=[IsStaff])
     def get_injections_by_campaign(self, request, pk):
