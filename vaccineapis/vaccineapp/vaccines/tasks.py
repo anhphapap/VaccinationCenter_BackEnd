@@ -29,4 +29,9 @@ def send_injection_reminder():
         )
 
 
+@shared_task
+def warm_up_redis():
+    r = redis.Redis.from_url(settings.REDIS_URL)
+    r.ping()  # Hoặc get/set 1 key dummy
+
 

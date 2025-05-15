@@ -87,6 +87,7 @@ class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.filter(is_active=True)
     serializer_class = UserSerializer
     pagination_class = UserPaginator
+    lookup_field = 'username'
 
     def get_permissions(self):
         if self.action == 'create':

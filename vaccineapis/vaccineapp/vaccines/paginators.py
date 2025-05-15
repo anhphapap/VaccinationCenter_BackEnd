@@ -10,7 +10,7 @@ class VaccinePaginator(PageNumberPagination):
 
 
 class InjectionPaginator(PageNumberPagination):
-    page_size = 5
+    page_size = 10
 
 
 class VaccinationCampaignPaginator(PageNumberPagination):
@@ -18,7 +18,7 @@ class VaccinationCampaignPaginator(PageNumberPagination):
 
 
 class UserPaginator(PageNumberPagination):
-    page_size = 5
+    page_size = 10
 
 class DosePaginator(PageNumberPagination):
     page_size = 10

@@ -160,10 +160,15 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # CLIENT_SECRET = '977cvBKgFvVg44A6s26bA5E4mvGUfMrQSUyQRrzzoAl3Uh2ADYpN1GcsDeObHdlNGCYnbCyytN3Z5EMArz6fxEnDbTJ58sEAXZMwG4MW6qJof4rENph8oKvqA68KJToP'
 
 # settings.py
+from celery.schedules import crontab
 CELERY_BEAT_SCHEDULE = {
+    'warm-up-redis': {
+        'task': 'vaccineapp.tasks.warm_up_redis',
+        'schedule': crontab(hour=4, minute=55),
+    },
     'send-injection-reminder': {
         'task': 'vaccines.tasks.send_injection_reminder',
-        'schedule': 86400.0,
+        'schedule': crontab(hour=5, minute=0),
     },
 }
 CELERY_BROKER_URL = os.environ.get('CELERY_BROKER_URL')
