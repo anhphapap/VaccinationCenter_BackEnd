@@ -131,7 +131,7 @@ class UserViewSet(viewsets.ModelViewSet):
             injections = injections.order_by('id')
         return Response(InjectionSerializer(injections, many=True).data, status=status.HTTP_200_OK)
 
-    @action(detail=True, methods=['get'], url_path='current-user')
+    @action(detail=False, methods=['get'], url_path='current-user')
     def get_current_user(self, request):
         user = request.user
         return Response(UserSerializer(user).data, status=status.HTTP_200_OK)
