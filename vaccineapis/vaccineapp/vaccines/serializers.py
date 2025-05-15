@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from vaccines.models import Category, Vaccine, User, VaccinationCampaign, Dose, Injection, Notification, PublicNotification
+from vaccines.models import Category, Vaccine, User, VaccinationCampaign, Dose, Injection, Notification, PublicNotification, PrivateNotification, NotificationStatus
 import re
 
 
@@ -214,3 +214,23 @@ class NotificationSerializer(serializers.ModelSerializer):
         model = Notification
         fields = '__all__'
         read_only_fields = ['notification_date']
+
+
+class PrivateNotificationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PrivateNotification
+        fields = ['id', 'title', 'message',
+                  'notification_date', 'is_read', 'injection']
+
+
+class PublicNotificationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PublicNotification
+        fields = ['id', 'title', 'message',
+                  'notification_date', 'vaccine_campaign']
+
+
+class NotificationStatusSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = NotificationStatus
+        fields = ['id', 'public_notification', 'is_read']

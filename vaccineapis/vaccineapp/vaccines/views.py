@@ -2,8 +2,8 @@ from django.http import HttpResponse
 from rest_framework import viewsets, generics, status
 from rest_framework.decorators import action
 from rest_framework.request import Request
-from vaccines.models import Vaccine, Category, User, VaccinationCampaign, Dose, Injection, Notification
-from vaccines.serializers import VaccineSerializer, CategorySerializer, VaccineDetailSerializer, UserSerializer, VaccinationCampaignSerializer, InjectionSerializer, DoseSerializer, UserRegisterSerializer, UserProfileSerializer, ChangePasswordSerializer, NotificationSerializer
+from vaccines.models import Vaccine, Category, User, VaccinationCampaign, Dose, Injection, Notification, PrivateNotification, NotificationStatus
+from vaccines.serializers import VaccineSerializer, CategorySerializer, VaccineDetailSerializer, UserSerializer, VaccinationCampaignSerializer, InjectionSerializer, DoseSerializer, UserRegisterSerializer, UserProfileSerializer, ChangePasswordSerializer, NotificationSerializer, PrivateNotificationSerializer, PublicNotificationSerializer
 from vaccines.paginators import CategoryPaginator, VaccinePaginator, InjectionPaginator, UserPaginator, VaccinationCampaignPaginator, DosePaginator
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny
@@ -287,3 +287,107 @@ class DoseViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         return Dose.objects.filter(active=True)
+
+
+class NotificationViewSet(viewsets.ViewSet):
+    def get_permissions(self):
+        if self.action in ['get_unread_count', 'get_all_notifications', 'mark_notification_read', 'mark_all_notifications_read']:
+            return [UserOwner()]
+        return [IsStaff()]
+
+    @action(detail=False, methods=['get'], url_path='unread-count')
+    def get_unread_count(self, request):
+        user = request.user
+        # Đếm số thông báo private chưa đọc
+        private_unread = PrivateNotification.objects.filter(
+            user=user, is_read=False).count()
+        # Đếm số thông báo public chưa đọc
+        public_unread = NotificationStatus.objects.filter(
+            user=user, is_read=False).count()
+
+        return Response({
+            'private_unread': private_unread,
+            'public_unread': public_unread,
+            'total_unread': private_unread + public_unread
+        }, status=status.HTTP_200_OK)
+
+    @action(detail=False, methods=['get'], url_path='all')
+    def get_all_notifications(self, request):
+        user = request.user
+
+        # Lấy thông báo private
+        private_notifications = PrivateNotification.objects.filter(user=user)
+        private_serializer = PrivateNotificationSerializer(
+            private_notifications, many=True)
+
+        # Lấy thông báo public
+        public_notifications = PublicNotification.objects.filter(
+            notificationstatus__user=user
+        ).order_by('-notification_date')
+        public_serializer = PublicNotificationSerializer(
+            public_notifications, many=True)
+
+        # Kết hợp và sắp xếp theo thời gian
+        all_notifications = []
+        for notification in private_serializer.data:
+            notification['type'] = 'private'
+            all_notifications.append(notification)
+
+        for notification in public_serializer.data:
+            notification['type'] = 'public'
+            all_notifications.append(notification)
+
+        # Sắp xếp theo thời gian mới nhất
+        all_notifications.sort(
+            key=lambda x: x['notification_date'], reverse=True)
+
+        return Response(all_notifications, status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=['patch'], url_path='mark-read')
+    def mark_notification_read(self, request, pk=None):
+        notification_type = request.data.get('type')
+        user = request.user
+
+        if notification_type == 'private':
+            try:
+                notification = PrivateNotification.objects.get(
+                    id=pk, user=user)
+                notification.is_read = True
+                notification.save()
+                return Response({'message': 'Đã đánh dấu thông báo private đã đọc'},
+                                status=status.HTTP_200_OK)
+            except PrivateNotification.DoesNotExist:
+                return Response({'error': 'Không tìm thấy thông báo private'},
+                                status=status.HTTP_404_NOT_FOUND)
+
+        elif notification_type == 'public':
+            try:
+                notification_status = NotificationStatus.objects.get(
+                    public_notification_id=pk,
+                    user=user
+                )
+                notification_status.is_read = True
+                notification_status.save()
+                return Response({'message': 'Đã đánh dấu thông báo public đã đọc'},
+                                status=status.HTTP_200_OK)
+            except NotificationStatus.DoesNotExist:
+                return Response({'error': 'Không tìm thấy thông báo public'},
+                                status=status.HTTP_404_NOT_FOUND)
+
+        return Response({'error': 'Loại thông báo không hợp lệ'},
+                        status=status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=False, methods=['patch'], url_path='mark-all-read')
+    def mark_all_notifications_read(self, request):
+        user = request.user
+
+        # Đánh dấu tất cả thông báo private đã đọc
+        PrivateNotification.objects.filter(
+            user=user, is_read=False).update(is_read=True)
+
+        # Đánh dấu tất cả thông báo public đã đọc
+        NotificationStatus.objects.filter(
+            user=user, is_read=False).update(is_read=True)
+
+        return Response({'message': 'Đã đánh dấu tất cả thông báo đã đọc'},
+                        status=status.HTTP_200_OK)
