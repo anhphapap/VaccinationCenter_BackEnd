@@ -93,7 +93,7 @@ class UserViewSet(viewsets.ModelViewSet):
             return [AllowAny()]
         elif self.action in ['retrieve', 'list', 'update', 'partial_update', 'delete',] and self.request.user.is_staff:
             return [IsStaff()]
-        elif self.action in ['retrieve', 'update', 'partial_update', 'delete', 'get_injections_by_user', 'change_password', 'download_injection_certificate', 'current-user']:
+        elif self.action in ['retrieve', 'update', 'partial_update', 'delete', 'get_injections_by_user', 'change_password', 'download_injection_certificate', 'get_current_user']:
             return [UserOwner()]
         return [IsStaff()]
 
@@ -105,7 +105,7 @@ class UserViewSet(viewsets.ModelViewSet):
         return UserSerializer
 
     @action(detail=True, methods=['get'], url_path='injections')
-    def get_injections_by_user(self, request,pk=None):
+    def get_injections_by_user(self, request, pk=None):
         user = self.get_object()
         # self.check_object_permissions(request, user)
         injections = user.injections.filter(active=True)
