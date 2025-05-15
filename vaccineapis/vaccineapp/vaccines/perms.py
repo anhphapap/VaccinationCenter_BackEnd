@@ -24,3 +24,10 @@ class InjectionOwner(permissions.IsAuthenticated):
 
     def has_object_permission(self, request, view, injection):
         return super().has_object_permission(request, view, injection) and injection.user == request.user
+
+class NotificationOwner(permissions.IsAuthenticated):
+    message = 'Bạn không có quyền truy cập'
+
+    def has_object_permission(self, request, view, notification):
+        return super().has_object_permission(request, view, notification) and notification.user == request.user
+

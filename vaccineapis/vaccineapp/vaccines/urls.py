@@ -10,6 +10,8 @@ router.register(r'users', views.UserViewSet, basename='users')
 router.register(r'injections', views.InjectionViewSet, basename='injection')
 router.register(r'campaigns', views.VaccinationCampaignViewSet,
                 basename='vaccination-campaign')
+router.register(r'notifications', views.NotificationViewSet,
+                basename='notifications')
 
 
 urlpatterns = [

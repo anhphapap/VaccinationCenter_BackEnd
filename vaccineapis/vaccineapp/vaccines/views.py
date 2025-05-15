@@ -7,7 +7,7 @@ from vaccines.serializers import VaccineSerializer, CategorySerializer, VaccineD
 from vaccines.paginators import CategoryPaginator, VaccinePaginator, InjectionPaginator, UserPaginator, VaccinationCampaignPaginator, DosePaginator
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny
-from vaccines.perms import IsStaff, UserOwner, InjectionOwner
+from vaccines.perms import IsStaff, UserOwner, InjectionOwner, NotificationOwner
 from reportlab.pdfgen import canvas
 from django.http import HttpResponse
 from reportlab.pdfbase import pdfmetrics
@@ -87,7 +87,6 @@ class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.filter(is_active=True)
     serializer_class = UserSerializer
     pagination_class = UserPaginator
-    lookup_field = 'username'
 
     def get_permissions(self):
         if self.action == 'create':
@@ -131,6 +130,11 @@ class UserViewSet(viewsets.ModelViewSet):
         else:
             injections = injections.order_by('id')
         return Response(InjectionSerializer(injections, many=True).data, status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=['get'], url_path='current-user')
+    def get_current_user(self, request):
+        user = request.user
+        return Response(UserSerializer(user).data, status=status.HTTP_200_OK)
 
     @action(detail=True, methods=['patch'], url_path='change-password')
     def change_password(self, request, username):
@@ -292,13 +296,21 @@ class DoseViewSet(viewsets.ModelViewSet):
 class NotificationViewSet(viewsets.ViewSet):
     def get_permissions(self):
         if self.action in ['get_unread_count', 'get_all_notifications', 'mark_notification_read', 'mark_all_notifications_read']:
-            return [UserOwner()]
+            return [NotificationOwner()]
         return [IsStaff()]
+
+    def get_queryset(self):
+        user = self.request.user
+        private_notifications = PrivateNotification.objects.filter(user=user)
+        public_notifications = PublicNotification.objects.all()
+        return list(private_notifications) + list(public_notifications)
+
+    def get_serializer_class(self):
+        return PrivateNotificationSerializer
 
     @action(detail=False, methods=['get'], url_path='unread-count')
     def get_unread_count(self, request):
         user = request.user
-        # Sử dụng select_related và prefetch_related để giảm số lượng query
         private_unread = PrivateNotification.objects.filter(
             user=user, is_read=False).count()
         public_unread = NotificationStatus.objects.filter(
@@ -313,15 +325,12 @@ class NotificationViewSet(viewsets.ViewSet):
     def get_all_notifications(self, request):
         user = request.user
 
-        # Sử dụng select_related để giảm số lượng query
         private_notifications = PrivateNotification.objects.filter(
-            user=user).select_related('injection')
+            user=user)
         private_serializer = PrivateNotificationSerializer(
             private_notifications, many=True)
 
-        # Sử dụng select_related và prefetch_related để giảm số lượng query
-        public_notifications = PublicNotification.objects.all(
-        ).select_related('vaccine_campaign')
+        public_notifications = PublicNotification.objects.all()
         public_serializer = PublicNotificationSerializer(
             public_notifications,
             many=True,
@@ -349,7 +358,6 @@ class NotificationViewSet(viewsets.ViewSet):
 
         if notification_type == 'private':
             try:
-                # Sử dụng update thay vì get + save để giảm số lượng query
                 updated = PrivateNotification.objects.filter(
                     id=pk, user=user, is_read=False).update(is_read=True)
                 if updated:
@@ -364,7 +372,6 @@ class NotificationViewSet(viewsets.ViewSet):
         elif notification_type == 'public':
             try:
                 notification = PublicNotification.objects.get(id=pk)
-                # Sử dụng update_or_create để tránh race condition
                 notification_status, created = NotificationStatus.objects.update_or_create(
                     user=user,
                     public_notification=notification,
@@ -383,46 +390,13 @@ class NotificationViewSet(viewsets.ViewSet):
     def mark_all_notifications_read(self, request):
         user = request.user
 
-        # Sử dụng bulk_create và bulk_update để tối ưu hiệu năng
+        # Đánh dấu tất cả thông báo private đã đọc
         PrivateNotification.objects.filter(
             user=user, is_read=False).update(is_read=True)
 
-        # Lấy tất cả thông báo public và notification status hiện tại
-        public_notifications = PublicNotification.objects.all()
-        existing_statuses = NotificationStatus.objects.filter(
-            user=user,
-            public_notification__in=public_notifications
-        ).select_related('public_notification')
-
-        # Tạo set các notification đã có status
-        existing_notification_ids = {
-            status.public_notification_id for status in existing_statuses}
-
-        # Tạo danh sách các status cần cập nhật và tạo mới
-        statuses_to_update = []
-        statuses_to_create = []
-
-        for status in existing_statuses:
-            if not status.is_read:
-                status.is_read = True
-                statuses_to_update.append(status)
-
-        for notification in public_notifications:
-            if notification.id not in existing_notification_ids:
-                statuses_to_create.append(
-                    NotificationStatus(
-                        user=user,
-                        public_notification=notification,
-                        is_read=True
-                    )
-                )
-
-        # Thực hiện bulk update và bulk create
-        if statuses_to_update:
-            NotificationStatus.objects.bulk_update(
-                statuses_to_update, ['is_read'])
-        if statuses_to_create:
-            NotificationStatus.objects.bulk_create(statuses_to_create)
+        # Đánh dấu tất cả thông báo public đã đọc
+        NotificationStatus.objects.filter(
+            user=user, is_read=False).update(is_read=True)
 
         return Response({'message': 'Đã đánh dấu tất cả thông báo đã đọc'},
                         status=status.HTTP_200_OK)
