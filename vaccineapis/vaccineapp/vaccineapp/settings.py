@@ -158,17 +158,22 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # CLIENT_ID = 'm8H0JMoxBgJTUFHvW6f2a29kf23udVTHoT5Ig1pg'
 # CLIENT_SECRET = '977cvBKgFvVg44A6s26bA5E4mvGUfMrQSUyQRrzzoAl3Uh2ADYpN1GcsDeObHdlNGCYnbCyytN3Z5EMArz6fxEnDbTJ58sEAXZMwG4MW6qJof4rENph8oKvqA68KJToP'
-
+TIME_ZONE = 'Asia/Ho_Chi_Minh'
+USE_TZ = True
 # settings.py
 from celery.schedules import crontab
 CELERY_BEAT_SCHEDULE = {
     'warm-up-redis': {
         'task': 'vaccineapp.tasks.warm_up_redis',
-        'schedule': crontab(hour=4, minute=55),
+        'schedule': crontab(hour=(4,23), minute=55),
     },
     'send-injection-reminder': {
         'task': 'vaccines.tasks.send_injection_reminder',
-        'schedule': crontab(hour=5, minute=0),
+        'schedule': crontab(hour=15, minute=37),
+    },
+    'update-campaign-status': {
+        'task': 'vaccines.tasks.update_campaign_status',
+        'schedule': crontab(hour=0, minute=0),
     },
 }
 CELERY_BROKER_URL = os.environ.get('CELERY_BROKER_URL')

@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from vaccines.models import Category, Vaccine, User, VaccinationCampaign, Dose, Injection, Notification
+from vaccines.models import Category, Vaccine, User, VaccinationCampaign, Dose, Injection, Notification, PublicNotification
 import re
 
 
@@ -165,6 +165,21 @@ class VaccinationCampaignSerializer(serializers.ModelSerializer):
         model = VaccinationCampaign
         fields = '__all__'
 
+    def create(self, validated_data):
+        # Tạo đợt tiêm mới
+        campaign = VaccinationCampaign.objects.create(**validated_data)
+
+        # Tạo thông báo công khai
+        PublicNotification.objects.create(
+            title=f"Đợt tiêm mới: {campaign.name}",
+            message=f"Đã có đợt tiêm mới: {campaign.name}. "
+            f"Thời gian: từ {campaign.start_date.strftime('%d/%m/%Y')} đến {campaign.end_date.strftime('%d/%m/%Y')}. "
+            f"{campaign.description}",
+            vaccine_campaign=campaign
+        )
+
+        return campaign
+
 
 class InjectionSerializer(serializers.ModelSerializer):
     class Meta:
@@ -193,8 +208,9 @@ class DoseSerializer(serializers.ModelSerializer):
         model = Dose
         fields = '__all__'
 
+
 class NotificationSerializer(serializers.ModelSerializer):
-    class Meta: 
+    class Meta:
         model = Notification
         fields = '__all__'
         read_only_fields = ['notification_date']

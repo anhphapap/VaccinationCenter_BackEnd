@@ -39,6 +39,34 @@ def send_injection_reminder():
 
 
 @shared_task
+def update_campaign_status():
+    now = timezone.now()
+
+    # Lấy tất cả các đợt tiêm còn active
+    active_campaigns = VaccinationCampaign.objects.filter(active=True)
+
+    for campaign in active_campaigns:
+        if campaign.end_date < now.date():
+            campaign.active = False
+            campaign.save()
+
+
+@shared_task
+def update_missed_injections():
+    now = timezone.now()
+
+    missed_injections = Injection.objects.filter(
+        injection_time__lt=now,
+        status='NOT_VACCINATED',
+        active=True
+    ).select_related('user', 'vaccine')
+
+    for injection in missed_injections:
+        injection.status = 'MISSED'
+        injection.save()
+
+
+@shared_task
 def warm_up_redis():
     r = redis.Redis.from_url(settings.REDIS_URL)
-    r.ping()  # Hoặc get/set 1 key dummy
+    r.ping()

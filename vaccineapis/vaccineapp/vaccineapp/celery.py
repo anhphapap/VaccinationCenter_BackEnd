@@ -10,7 +10,8 @@ app = Celery('vaccineapp')
 # Using a string here means the worker doesn't have to serialize
 # the configuration object to child processes.
 app.config_from_object('django.conf:settings', namespace='CELERY')
-
+app.conf.timezone = 'Asia/Ho_Chi_Minh'
+app.conf.enable_utc = False  # RẤT QUAN TRỌNG để Celery dùng local time
 # Load task modules from all registered Django app configs.
 app.autodiscover_tasks()
 @app.task(name='vaccines.tasks.send_injection_reminder')
