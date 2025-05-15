@@ -105,7 +105,7 @@ class UserViewSet(viewsets.ModelViewSet):
         return UserSerializer
 
     @action(detail=True, methods=['get'], url_path='injections')
-    def get_injections_by_user(self, request, username=None):
+    def get_injections_by_user(self, request,pk=None):
         user = self.get_object()
         # self.check_object_permissions(request, user)
         injections = user.injections.filter(active=True)
