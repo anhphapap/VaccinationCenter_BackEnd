@@ -221,13 +221,26 @@ class PrivateNotificationSerializer(serializers.ModelSerializer):
         model = PrivateNotification
         fields = ['id', 'title', 'message',
                   'notification_date', 'is_read', 'injection']
+        read_only_fields = ['notification_date']
 
 
 class PublicNotificationSerializer(serializers.ModelSerializer):
+    is_read = serializers.SerializerMethodField()
+
     class Meta:
         model = PublicNotification
         fields = ['id', 'title', 'message',
-                  'notification_date', 'vaccine_campaign']
+                  'notification_date', 'vaccine_campaign', 'is_read']
+        read_only_fields = ['notification_date']
+
+    def get_is_read(self, obj):
+        user = self.context['request'].user
+        try:
+            status = NotificationStatus.objects.get(
+                user=user, public_notification=obj)
+            return status.is_read
+        except NotificationStatus.DoesNotExist:
+            return False
 
 
 class NotificationStatusSerializer(serializers.ModelSerializer):
