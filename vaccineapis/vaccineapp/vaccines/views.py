@@ -93,7 +93,7 @@ class UserViewSet(viewsets.ModelViewSet):
             return [AllowAny()]
         elif self.action in ['retrieve', 'list', 'update', 'partial_update', 'delete',] and self.request.user.is_staff:
             return [IsStaff()]
-        elif self.action in ['retrieve', 'update', 'partial_update', 'delete', 'get_injections_by_user', 'change_password', 'download_injection_certificate']:
+        elif self.action in ['retrieve', 'update', 'partial_update', 'delete', 'get_injections_by_user', 'change_password', 'download_injection_certificate', 'current-user']:
             return [UserOwner()]
         return [IsStaff()]
 
