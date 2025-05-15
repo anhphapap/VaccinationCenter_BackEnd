@@ -165,7 +165,7 @@ from celery.schedules import crontab
 CELERY_BEAT_SCHEDULE = {
     'warm-up-redis': {
         'task': 'vaccineapp.tasks.warm_up_redis',
-        'schedule': crontab(hour=(15,23), minute=45),
+        'schedule': crontab(hour=(16,23), minute=10),
     },
     'send-injection-reminder': {
         'task': 'vaccines.tasks.send_injection_reminder',
