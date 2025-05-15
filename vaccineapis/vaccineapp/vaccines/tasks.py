@@ -1,25 +1,34 @@
 from celery import shared_task
+from django.conf import settings
 from django.utils import timezone
 from datetime import timedelta
+
+import redis
 from .models import Injection, PrivateNotification, VaccinationCampaign, User, PublicNotification, NotificationStatus
 
 
 @shared_task
 def send_injection_reminder():
-    # Get injections scheduled in the next 3 days
-    three_days_from_now = timezone.now() + timedelta(days=3)
+    now = timezone.now()
+    tomorrow = now + timedelta(days=1)
+
     upcoming_injections = Injection.objects.filter(
-        injection_time__lte=three_days_from_now,
-        injection_time__gt=timezone.now(),
+        injection_time__gte=now,
+        injection_time__lte=tomorrow,
         status='NOT_VACCINATED'
     ).select_related('user', 'vaccine')
 
     for injection in upcoming_injections:
-        # Create notification
-        title = f"NHẮC NHỞ: Lịch tiêm {injection.vaccine.name} sắp đến"
-        print(injection.vaccine)
-        message = f"Bạn có lịch tiêm {injection.vaccine.name} trong vòng 3 ngày tới. "
-        message += f"Vui lòng chuẩn bị và đến đúng giờ!"
+        is_today = injection.injection_time.date() == now.date()
+
+        if is_today:
+            title = f"NHẮC NHỞ: Hôm nay là ngày tiêm {injection.vaccine.name}"
+            message = f"Bạn có lịch tiêm {injection.vaccine.name} vào hôm nay. "
+            message += f"Vui lòng đến đúng giờ và mang theo giấy tờ cần thiết!"
+        else:
+            title = f"NHẮC NHỞ: Ngày mai là ngày tiêm {injection.vaccine.name}"
+            message = f"Bạn có lịch tiêm {injection.vaccine.name} vào ngày mai. "
+            message += f"Vui lòng chuẩn bị và đến đúng giờ!"
 
         PrivateNotification.objects.create(
             user=injection.user,
@@ -33,5 +42,3 @@ def send_injection_reminder():
 def warm_up_redis():
     r = redis.Redis.from_url(settings.REDIS_URL)
     r.ping()  # Hoặc get/set 1 key dummy
-
-
