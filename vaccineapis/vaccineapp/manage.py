@@ -22,4 +22,6 @@ def main():
 
 if __name__ == '__main__':
     load_dotenv()
+    import os
+    print(repr(os.getenv('FIREBASE_PRIVATE_KEY')))
     main()

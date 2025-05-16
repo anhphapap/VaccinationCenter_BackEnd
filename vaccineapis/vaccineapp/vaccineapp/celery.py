@@ -1,3 +1,4 @@
+from dotenv import load_dotenv
 import os
 from celery import Celery
 from celery.schedules import crontab
@@ -14,7 +15,7 @@ app.conf.timezone = 'Asia/Ho_Chi_Minh'
 app.conf.enable_utc = False  # RẤT QUAN TRỌNG để Celery dùng local time
 # Load task modules from all registered Django app configs.
 app.autodiscover_tasks()
-
+load_dotenv()
 # Configure periodic tasks
 app.conf.beat_schedule = {
     'send-injection-reminder': {
