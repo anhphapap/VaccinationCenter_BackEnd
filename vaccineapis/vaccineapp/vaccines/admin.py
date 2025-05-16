@@ -1,6 +1,7 @@
 from django.contrib import admin
 from vaccines.models import Category, Vaccine, Injection, VaccinationCampaign, User, PublicNotification, NotificationStatus
 from django.utils import timezone
+from .firebase_config import send_push_notification
 
 
 class VaccineAppAdmin(admin.AdminSite):
@@ -57,9 +58,7 @@ class VaccinationCampaignAdmin(BaseAdmin):
         # Lưu campaign trước
         super().save_model(request, obj, form, change)
 
-        # Nếu là tạo mới (không phải update) và được chọn gửi thông báo
         if not change and obj.send_notification:
-            # Tạo thông báo công khai
             notification = PublicNotification.objects.create(
                 title=f"Đợt tiêm mới: {obj.name}",
                 message=f"Đã có đợt tiêm mới: {obj.name}\n"
@@ -68,7 +67,6 @@ class VaccinationCampaignAdmin(BaseAdmin):
                 vaccine_campaign=obj
             )
 
-            # Tạo trạng thái thông báo cho tất cả người dùng
             users = User.objects.filter(is_active=True)
             notification_statuses = [
                 NotificationStatus(
@@ -79,6 +77,20 @@ class VaccinationCampaignAdmin(BaseAdmin):
             ]
             # Sử dụng bulk_create để tạo nhiều bản ghi cùng lúc
             NotificationStatus.objects.bulk_create(notification_statuses)
+
+            # Send push notifications to all users with FCM tokens
+            for user in users:
+                if user.fcm_token:
+                    send_push_notification(
+                        token=user.fcm_token,
+                        title=notification.title,
+                        body=notification.message,
+                        data={
+                            'type': 'public',
+                            'notification_id': str(notification.id),
+                            'campaign_id': str(obj.id)
+                        }
+                    )
 
             # Reset trạng thái gửi thông báo
             obj.send_notification = False

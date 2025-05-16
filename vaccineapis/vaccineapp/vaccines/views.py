@@ -91,7 +91,7 @@ class UserViewSet(viewsets.ModelViewSet):
     def get_permissions(self):
         if self.action == 'create':
             return [AllowAny()]
-        elif self.action in ['retrieve', 'list', 'update', 'partial_update', 'delete',] and self.request.user.is_staff:
+        elif self.action in ['retrieve', 'list', 'update', 'partial_update', 'delete', 'download_injection_certificate'] and self.request.user.is_staff:
             return [IsStaff()]
         elif self.action in ['retrieve', 'update', 'partial_update', 'delete', 'get_injections_by_user', 'change_password', 'download_injection_certificate', 'get_current_user']:
             return [UserOwner()]
