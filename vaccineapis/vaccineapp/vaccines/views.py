@@ -227,6 +227,18 @@ class UserViewSet(viewsets.ModelViewSet):
         p.save()
         return response
 
+    @action(detail=False, methods=['post'], url_path='update-fcm-token')
+    def update_fcm_token(self, request):
+        token = request.data.get('token')
+        if not token:
+            return Response({'error': 'Token is required'}, status=status.HTTP_400_BAD_REQUEST)
+
+        user = request.user
+        user.fcm_token = token
+        user.save()
+
+        return Response({'message': 'FCM token updated successfully'}, status=status.HTTP_200_OK)
+
 
 class InjectionViewSet(viewsets.ModelViewSet):
     serializer_class = InjectionSerializer

@@ -14,6 +14,7 @@ class User(AbstractUser):
         unique=True, max_length=255, null=True, blank=True)
     address = models.CharField(max_length=255, null=True, blank=True)
     is_completed_profile = models.BooleanField(default=False)
+    fcm_token = models.CharField(max_length=255, null=True, blank=True)
 
     class Meta:
         verbose_name = 'Người dùng'
@@ -131,6 +132,8 @@ class VaccinationCampaign(BaseModel):
     end_date = models.DateTimeField()
     vaccine = models.ForeignKey(
         Vaccine, on_delete=models.CASCADE, null=True, blank=True)
+    send_notification = models.BooleanField(
+        default=True, verbose_name="Gửi thông báo công khai")
 
     def __str__(self):
         return self.name
@@ -149,9 +152,9 @@ class Notification(models.Model):
         abstract = True
 
 
-
 class PrivateNotification(Notification):
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='private_notifications', null=True)
+    user = models.ForeignKey(User, on_delete=models.CASCADE,
+                             related_name='private_notifications', null=True)
     injection = models.ForeignKey(
         Injection, on_delete=models.CASCADE, related_name='notifications', null=True, blank=True)
     is_read = models.BooleanField(default=False)
@@ -166,7 +169,8 @@ class PrivateNotification(Notification):
 
 
 class PublicNotification(Notification):
-    vaccine_campaign = models.ForeignKey(VaccinationCampaign, on_delete=models.CASCADE, related_name='public_notification')
+    vaccine_campaign = models.ForeignKey(
+        VaccinationCampaign, on_delete=models.CASCADE, related_name='public_notification')
 
 
 class NotificationStatus(models.Model):
@@ -176,9 +180,8 @@ class NotificationStatus(models.Model):
         PublicNotification, on_delete=models.CASCADE, related_name='notification_status')
     is_read = models.BooleanField(default=False)
 
-    class Meta: 
+    class Meta:
         unique_together = ('user', 'public_notification')
         indexes = [
             models.Index(fields=['user', 'is_read']),
         ]
-    

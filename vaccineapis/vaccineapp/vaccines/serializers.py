@@ -165,24 +165,6 @@ class VaccinationCampaignSerializer(serializers.ModelSerializer):
         model = VaccinationCampaign
         fields = '__all__'
 
-    def create(self, validated_data):
-        campaign = VaccinationCampaign.objects.create(**validated_data)
-
-        public_notification = PublicNotification.objects.create(
-            title=f"Đợt tiêm mới: {campaign.name}",
-            message=f"Đã có đợt tiêm mới: {campaign.name}. "
-            f"Thời gian: từ {campaign.start_date.strftime('%d/%m/%Y')} đến {campaign.end_date.strftime('%d/%m/%Y')}. "
-            f"{campaign.description}",
-            vaccine_campaign=campaign
-        )
-
-        NotificationStatus.objects.create(
-            user=self.context['request'].user,
-            public_notification=public_notification,
-            is_read=False
-        )
-
-        return campaign
 
 
 class InjectionSerializer(serializers.ModelSerializer):

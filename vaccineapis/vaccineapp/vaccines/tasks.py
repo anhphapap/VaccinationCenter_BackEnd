@@ -7,7 +7,7 @@ import redis
 from .models import Injection, PrivateNotification, VaccinationCampaign, User, PublicNotification, NotificationStatus
 
 
-@shared_task
+@shared_task(name='vaccines.tasks.send_injection_reminder')
 def send_injection_reminder():
     now = timezone.now()
     tomorrow = now + timedelta(days=1)
@@ -38,7 +38,7 @@ def send_injection_reminder():
         )
 
 
-@shared_task
+@shared_task(name='vaccines.tasks.update_campaign_status')
 def update_campaign_status():
     now = timezone.now()
 
@@ -46,12 +46,13 @@ def update_campaign_status():
     active_campaigns = VaccinationCampaign.objects.filter(active=True)
 
     for campaign in active_campaigns:
-        if campaign.end_date < now.date():
+        # Chuyển end_date về date để so sánh
+        if campaign.end_date.date() < now.date():
             campaign.active = False
             campaign.save()
 
 
-@shared_task
+@shared_task(name='vaccines.tasks.update_missed_injections')
 def update_missed_injections():
     now = timezone.now()
 
@@ -66,7 +67,7 @@ def update_missed_injections():
         injection.save()
 
 
-@shared_task
+@shared_task(name='vaccines.tasks.warm_up_redis')
 def warm_up_redis():
     r = redis.Redis.from_url(settings.REDIS_URL)
     r.ping()
