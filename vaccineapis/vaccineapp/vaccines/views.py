@@ -161,7 +161,7 @@ class UserViewSet(viewsets.ModelViewSet):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     @action(detail=True, methods=['get'], url_path='injection-certificate/(?P<injection_id>[^/.]+)')
-    def download_injection_certificate(self, request, username=None, injection_id=None):
+    def download_injection_certificate(self, request, pk=None, injection_id=None):
         user = self.get_object()
         try:
             injection = Injection.objects.get(id=injection_id, user=user)
@@ -226,18 +226,6 @@ class UserViewSet(viewsets.ModelViewSet):
         p.showPage()
         p.save()
         return response
-
-    @action(detail=False, methods=['post'], url_path='update-fcm-token')
-    def update_fcm_token(self, request):
-        token = request.data.get('token')
-        if not token:
-            return Response({'error': 'Token is required'}, status=status.HTTP_400_BAD_REQUEST)
-
-        user = request.user
-        user.fcm_token = token
-        user.save()
-
-        return Response({'message': 'FCM token updated successfully'}, status=status.HTTP_200_OK)
 
 
 class InjectionViewSet(viewsets.ModelViewSet):
