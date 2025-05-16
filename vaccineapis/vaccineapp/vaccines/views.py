@@ -95,11 +95,11 @@ class UserViewSet(viewsets.ModelViewSet):
             if self.request.user.is_staff:
                 return [IsStaff()]
             return [UserOwner()]
-        elif self.action in ['retrieve', 'list', 'update', 'partial_update', 'delete'] and self.request.user.is_staff:
+        elif self.action in ['list'] or self.request.user.is_staff:
             return [IsStaff()]
         elif self.action in ['retrieve', 'update', 'partial_update', 'delete', 'get_injections_by_user', 'change_password', 'get_current_user']:
             return [UserOwner()]
-        return [IsStaff()]
+        return [IsStaff()]      
 
     def get_serializer_class(self):
         if self.action == 'create':
