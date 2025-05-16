@@ -166,7 +166,6 @@ class VaccinationCampaignSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
-
 class InjectionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Injection
@@ -187,6 +186,18 @@ class InjectionSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError(
                     {"error": "Bạn đã đăng ký đợt tiêm cộng đồng này trước đó"})
         return data
+
+    def create(self, validated_data):
+        injection = super().create(validated_data)
+        PrivateNotification.objects.create(
+            user=injection.user,
+            title="Lịch tiêm mới",
+            message=f"Bạn có lịch tiêm mới cho vaccine {injection.vaccine.name} vào ngày {injection.injection_time.strftime('%d/%m/%Y')} lúc {injection.injection_time.strftime('%H:%M')}",
+            injection=injection,
+            is_read=False
+        )
+
+        return injection
 
 
 class DoseSerializer(serializers.ModelSerializer):
