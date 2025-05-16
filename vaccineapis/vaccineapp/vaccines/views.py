@@ -91,9 +91,13 @@ class UserViewSet(viewsets.ModelViewSet):
     def get_permissions(self):
         if self.action == 'create':
             return [AllowAny()]
-        elif self.action in ['retrieve', 'list', 'update', 'partial_update', 'delete', 'download_injection_certificate'] and self.request.user.is_staff:
+        elif self.action == 'download_injection_certificate':
+            if self.request.user.is_staff:
+                return [IsStaff()]
+            return [UserOwner()]
+        elif self.action in ['retrieve', 'list', 'update', 'partial_update', 'delete'] and self.request.user.is_staff:
             return [IsStaff()]
-        elif self.action in ['retrieve', 'update', 'partial_update', 'delete', 'get_injections_by_user', 'change_password', 'download_injection_certificate', 'get_current_user']:
+        elif self.action in ['retrieve', 'update', 'partial_update', 'delete', 'get_injections_by_user', 'change_password', 'get_current_user']:
             return [UserOwner()]
         return [IsStaff()]
 
@@ -164,7 +168,10 @@ class UserViewSet(viewsets.ModelViewSet):
     def download_injection_certificate(self, request, pk=None, injection_id=None):
         user = self.get_object()
         try:
-            injection = Injection.objects.get(id=injection_id, user=user)
+            if request.user.is_staff:
+                injection = Injection.objects.get(id=injection_id)
+            else:
+                injection = Injection.objects.get(id=injection_id, user=user)
         except Injection.DoesNotExist:
             return Response({'error': 'Injection không tồn tại hoặc không thuộc về user này'}, status=status.HTTP_404_NOT_FOUND)
 
