@@ -430,7 +430,6 @@ def hmacsha512(key, data):
 
 
 def payment(request):
-
     if request.method == 'POST':
         # Process input data and build url payment
         form = PaymentForm(request.POST)
@@ -468,7 +467,7 @@ def payment(request):
             vnpay_payment_url = vnp.get_payment_url(
                 settings.VNPAY_PAYMENT_URL, settings.VNPAY_HASH_SECRET_KEY)
             print(vnpay_payment_url)
-            return redirect(vnpay_payment_url)
+            return JsonResponse({'payment_url': vnpay_payment_url})
         else:
             print("Form input not validate")
     else:
