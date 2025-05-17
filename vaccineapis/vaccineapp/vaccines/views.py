@@ -437,8 +437,8 @@ def payment(request):
         order_id = request.data.get('order_id')
         amount = request.data.get('amount')
         order_desc = request.data.get('order_desc')
-        bank_code = request.data.get['bank_code']
-        language = request.data.get['language']
+        bank_code = request.data.get('bank_code')
+        language = request.data.get('language')
         ipaddr = get_client_ip(request)
         # Build URL Payment
         vnp = vnpay()
