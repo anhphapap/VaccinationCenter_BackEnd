@@ -1,3 +1,4 @@
+from django import forms
 from django.db import models
 from ckeditor.fields import RichTextField
 from django.contrib.auth.models import AbstractUser
@@ -185,3 +186,35 @@ class NotificationStatus(models.Model):
         indexes = [
             models.Index(fields=['user', 'is_read']),
         ]
+
+class Order(BaseModel):
+    order_id = models.CharField(primary_key=True, max_length=255)
+    amount = models.FloatField()
+    order_desc = models.CharField(max_length=255)
+    vnp_TransactionNo = models.CharField(max_length=255)
+    vnp_ResponseCode = models.CharField(max_length=10)
+    vnp_TmnCode = models.CharField(max_length=255)
+    vnp_PayDate = models.DateTimeField(auto_now_add=True)
+    vnp_BankCode = models.CharField(max_length=255)
+    vnp_CardType = models.CharField(max_length=255)
+    user = models.ForeignKey(User, on_delete=models.CASCADE,
+                             related_name='orders')
+    
+class OrderDetail(BaseModel):
+    order = models.ForeignKey(Order, on_delete=models.CASCADE,
+                             related_name='order_details')
+    vaccine = models.ForeignKey(Vaccine, on_delete=models.CASCADE,
+                             related_name='order_details')
+    unit_price = models.FloatField()
+
+    
+    
+
+class PaymentForm(forms.Form):
+
+    order_id = forms.CharField(max_length=250)
+    order_type = forms.CharField(max_length=20)
+    amount = forms.IntegerField()
+    order_desc = forms.CharField(max_length=100)
+    bank_code = forms.CharField(max_length=20, required=False)
+    language = forms.CharField(max_length=2)

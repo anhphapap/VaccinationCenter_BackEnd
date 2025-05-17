@@ -165,15 +165,15 @@ from celery.schedules import crontab
 CELERY_BEAT_SCHEDULE = {
     'warm-up-redis': {
         'task': 'vaccineapp.tasks.warm_up_redis',
-        'schedule': crontab(hour=(16,23), minute=5),
+        'schedule': crontab(hour=(4,23), minute=(55,55)),
     },
     'send-injection-reminder': {
         'task': 'vaccines.tasks.send_injection_reminder',
-        'schedule': crontab(hour=16, minute=10),
+        'schedule': crontab(hour=5, minute=0),
     },
     'update-campaign-status': {
         'task': 'vaccines.tasks.update_campaign_status',
-        'schedule': crontab(hour=0, minute=0),
+        'schedule': crontab(hour=0, minute=1),
     },
 }
 CELERY_BROKER_URL = os.environ.get('CELERY_BROKER_URL')
@@ -183,4 +183,10 @@ CELERY_BROKER_USE_SSL = {
     'ssl_check_hostname': False,
 }
 
-print(timezone.now())
+
+VNPAY_RETURN_URL = 'http://localhost:8000/payment_return'  # get from config
+VNPAY_PAYMENT_URL = 'https://sandbox.vnpayment.vn/paymentv2/vpcpay.html'  # get from config
+VNPAY_API_URL = 'https://sandbox.vnpayment.vn/merchant_webapi/api/transaction'
+VNPAY_TMN_CODE = 'H81OXN1O'  # Website ID in VNPAY System, get from config
+# Secret key for create checksum,get from config
+VNPAY_HASH_SECRET_KEY = 'KYPLD7TPZY3U0X30P5OJM87B9BYD1KKJ'
