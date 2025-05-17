@@ -430,14 +430,14 @@ def hmacsha512(key, data):
 
 
 def payment(request):
-    if request.method == 'POST':
+    if request.method == 'GET':
         # Process input data and build url payment
-        form = PaymentForm(request.POST)
+        form = PaymentForm(request.GET)
         if form.is_valid():
             order_type = form.cleaned_data['order_type']
-            order_id = request.POST.get('order_id')
-            amount = request.POST.get('amount')
-            order_desc = request.POST.get('order_desc')
+            order_id = request.GET.get('order_id')
+            amount = request.GET.get('amount')
+            order_desc = request.GET.get('order_desc')
             bank_code = form.cleaned_data['bank_code']
             language = form.cleaned_data['language']
             ipaddr = get_client_ip(request)
