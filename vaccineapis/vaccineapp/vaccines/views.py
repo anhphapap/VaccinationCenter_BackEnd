@@ -429,10 +429,11 @@ def hmacsha512(key, data):
     byteData = data.encode('utf-8')
     return hmac.new(byteKey, byteData, hashlib.sha512).hexdigest()
 
+
 @api_view(['POST'])
 def payment(request):
     if request.method == 'POST':
-    # Process input data and build url payment        if form.is_valid():
+        # Process input data and build url payment        if form.is_valid():
         order_type = request.data['order_type']
         order_id = request.data.get('order_id')
         amount = request.data.get('amount')
@@ -471,9 +472,8 @@ def payment(request):
         print("Form input not validate")
 
 
-
 def payment_ipn(request):
-    inputData = request.GET
+    inputData = request.data
     if inputData:
         vnp = vnpay()
         vnp.responseData = inputData.dict()
@@ -521,20 +521,23 @@ def payment_ipn(request):
 
 @api_view(['GET'])
 def payment_return(request):
-    inputData = request.GET
+    inputData = request.data
     if inputData:
         vnp = vnpay()
         vnp.responseData = inputData.dict()
-        order_id = inputData['vnp_TxnRef']
-        amount = int(inputData['vnp_Amount']) / 100
-        order_desc = inputData['vnp_OrderInfo']
-        vnp_TransactionNo = inputData['vnp_TransactionNo']
-        vnp_ResponseCode = inputData['vnp_ResponseCode']
-        vnp_TmnCode = inputData['vnp_TmnCode']
-        vnp_PayDate = inputData['vnp_PayDate']
-        vnp_BankCode = inputData['vnp_BankCode']
-        vnp_CardType = inputData['vnp_CardType']
+        order_id = inputData.get('vnp_TxnRef')
+        amount = int(inputData.get('vnp_Amount', 0)) / 100
+        order_desc = inputData.get('vnp_OrderInfo')
+        vnp_TransactionNo = inputData.get('vnp_TransactionNo')
+        vnp_ResponseCode = inputData.get('vnp_ResponseCode')
+        vnp_TmnCode = inputData.get('vnp_TmnCode')
+        vnp_PayDate = inputData.get('vnp_PayDate')
+        vnp_BankCode = inputData.get('vnp_BankCode')
+        vnp_CardType = inputData.get('vnp_CardType')
+        vnp_TransactionStatus = inputData.get('vnp_TransactionStatus')
+        vnp_BankTranNo = inputData.get('vnp_BankTranNo')
 
+        # Create order record
         order = Order.objects.create(
             order_id=order_id,
             amount=amount,
@@ -542,33 +545,54 @@ def payment_return(request):
             vnp_TransactionNo=vnp_TransactionNo,
             vnp_ResponseCode=vnp_ResponseCode,
             vnp_TmnCode=vnp_TmnCode,
-            vnp_PayDate=vnp_PayDate,
+            vnp_PayDate=datetime.strptime(vnp_PayDate, '%Y%m%d%H%M%S'),
             vnp_BankCode=vnp_BankCode,
             vnp_CardType=vnp_CardType,
             user=request.user
         )
+
         if vnp.validate_response(settings.VNPAY_HASH_SECRET_KEY):
-            if vnp_ResponseCode == "00":
-                return JsonResponse({"title": "Kết quả thanh toán",
-                                                               "result": "Thành công", "order_id": order_id,
-                                                               "amount": amount,
-                                                               "order_desc": order_desc,
-                                                               "vnp_TransactionNo": vnp_TransactionNo,
-                                                               "vnp_ResponseCode": vnp_ResponseCode})
+            if vnp_ResponseCode == "00" and vnp_TransactionStatus == "00":
+                return JsonResponse({
+                    "title": "Kết quả thanh toán",
+                    "result": "Thành công",
+                    "order_id": order_id,
+                    "amount": amount,
+                    "order_desc": order_desc,
+                    "vnp_TransactionNo": vnp_TransactionNo,
+                    "vnp_ResponseCode": vnp_ResponseCode,
+                    "vnp_BankTranNo": vnp_BankTranNo,
+                    "vnp_BankCode": vnp_BankCode,
+                    "vnp_PayDate": vnp_PayDate
+                })
             else:
-                return JsonResponse({"title": "Kết quả thanh toán",
-                                                               "result": "Lỗi", "order_id": order_id,
-                                                               "amount": amount,
-                                                               "order_desc": order_desc,
-                                                               "vnp_TransactionNo": vnp_TransactionNo,
-                                                               "vnp_ResponseCode": vnp_ResponseCode})
+                return JsonResponse({
+                    "title": "Kết quả thanh toán",
+                    "result": "Lỗi",
+                    "order_id": order_id,
+                    "amount": amount,
+                    "order_desc": order_desc,
+                    "vnp_TransactionNo": vnp_TransactionNo,
+                    "vnp_ResponseCode": vnp_ResponseCode,
+                    "vnp_TransactionStatus": vnp_TransactionStatus
+                })
         else:
-            return JsonResponse(request, "templates/payment/payment_return.html",
-                          {"title": "Kết quả thanh toán", "result": "Lỗi", "order_id": order_id, "amount": amount,
-                           "order_desc": order_desc, "vnp_TransactionNo": vnp_TransactionNo,
-                           "vnp_ResponseCode": vnp_ResponseCode, "msg": "Sai checksum"})
+            return JsonResponse({
+                "title": "Kết quả thanh toán",
+                "result": "Lỗi",
+                "order_id": order_id,
+                "amount": amount,
+                "order_desc": order_desc,
+                "vnp_TransactionNo": vnp_TransactionNo,
+                "vnp_ResponseCode": vnp_ResponseCode,
+                "msg": "Sai checksum"
+            })
     else:
-        return JsonResponse({"title": "Kết quả thanh toán", "result": ""})
+        return JsonResponse({
+            "title": "Kết quả thanh toán",
+            "result": "Lỗi",
+            "msg": "Không có dữ liệu"
+        })
 
 
 def get_client_ip(request):
