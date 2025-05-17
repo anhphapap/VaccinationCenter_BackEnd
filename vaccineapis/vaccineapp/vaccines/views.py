@@ -29,6 +29,7 @@ from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import mm
 import os
+from rest_framework.decorators import api_view
 # Đăng ký font Arial
 FONT_PATH = os.path.join(os.path.dirname(__file__), 'fonts', 'arial.ttf')
 pdfmetrics.registerFont(TTFont('Arial', FONT_PATH))
@@ -428,16 +429,16 @@ def hmacsha512(key, data):
     byteData = data.encode('utf-8')
     return hmac.new(byteKey, byteData, hashlib.sha512).hexdigest()
 
-
+@api_view(['POST'])
 def payment(request):
-    if request.method == 'GET':
+    if request.method == 'POST':
         # Process input data and build url payment
-        form = PaymentForm(request.GET)
+        form = PaymentForm(request.POST)
         if form.is_valid():
             order_type = form.cleaned_data['order_type']
-            order_id = request.GET.get('order_id')
-            amount = request.GET.get('amount')
-            order_desc = request.GET.get('order_desc')
+            order_id = request.data.get('order_id')
+            amount = request.data.get('amount')
+            order_desc = request.POST.get('order_desc')
             bank_code = form.cleaned_data['bank_code']
             language = form.cleaned_data['language']
             ipaddr = get_client_ip(request)
