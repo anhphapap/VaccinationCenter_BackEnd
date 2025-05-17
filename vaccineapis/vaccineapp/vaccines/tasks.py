@@ -55,12 +55,9 @@ def send_injection_reminder():
 @shared_task(name='vaccines.tasks.update_campaign_status')
 def update_campaign_status():
     now = timezone.now()
-
-    # Lấy tất cả các đợt tiêm còn active
     active_campaigns = VaccinationCampaign.objects.filter(active=True)
 
     for campaign in active_campaigns:
-        # Chuyển end_date về date để so sánh
         if campaign.end_date.date() < now.date():
             campaign.active = False
             campaign.save()

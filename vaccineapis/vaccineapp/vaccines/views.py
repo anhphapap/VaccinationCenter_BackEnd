@@ -277,8 +277,6 @@ class VaccinationCampaignViewSet(viewsets.ModelViewSet):
     queryset = VaccinationCampaign.objects.all()
     serializer_class = VaccinationCampaignSerializer
 
-    def get_queryset(self):
-        return VaccinationCampaign.objects.filter(active=True)
 
     def get_permissions(self):
         if self.request.method.__eq__('GET'):
