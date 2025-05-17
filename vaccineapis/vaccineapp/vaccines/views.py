@@ -99,7 +99,7 @@ class UserViewSet(viewsets.ModelViewSet):
             return [IsStaff()]
         elif self.action in ['retrieve', 'update', 'partial_update', 'delete', 'get_injections_by_user', 'change_password', 'get_current_user']:
             return [UserOwner()]
-        return [IsStaff()]      
+        return [IsStaff()]
 
     def get_serializer_class(self):
         if self.action == 'create':
@@ -114,7 +114,7 @@ class UserViewSet(viewsets.ModelViewSet):
         # self.check_object_permissions(request, user)
         injections = user.injections.filter(active=True)
         sort_by = self.request.query_params.get('sort_by')
-        status_param = self.request.query_params.get('status')
+        status_param = self.request.query_params.getlist('status')
         vaccine = self.request.query_params.get('vaccine')
         injection_date = self.request.query_params.get('injection_date')
 
@@ -122,7 +122,7 @@ class UserViewSet(viewsets.ModelViewSet):
             injections = injections.filter(vaccine__name__icontains=vaccine)
 
         if status_param:
-            injections = injections.filter(status__iexact=status_param)
+            injections = injections.filter(status__in=status_param)
 
         if injection_date:
             injections = injections.filter(injection_time__date=injection_date)
@@ -252,8 +252,7 @@ class InjectionViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(vaccine__name__icontains=vaccine)
 
         if status:
-            status_ids = [s for s in status]
-            queryset = queryset.filter(status__in=status_ids).distinct()
+            queryset = queryset.filter(status__in=status)
 
         if injection_date:
             queryset = queryset.filter(injection_time__date=injection_date)
@@ -276,7 +275,6 @@ class InjectionViewSet(viewsets.ModelViewSet):
 class VaccinationCampaignViewSet(viewsets.ModelViewSet):
     queryset = VaccinationCampaign.objects.all()
     serializer_class = VaccinationCampaignSerializer
-
 
     def get_permissions(self):
         if self.request.method.__eq__('GET'):
