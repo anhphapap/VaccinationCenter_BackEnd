@@ -519,7 +519,7 @@ def payment_ipn(request):
     return result
 
 
-@api_view(['POST'])
+@api_view(['GET'])
 def payment_return(request):
     inputData = request.GET
     if inputData:
