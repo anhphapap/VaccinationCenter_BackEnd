@@ -184,7 +184,8 @@ CELERY_BROKER_USE_SSL = {
 }
 
 
-VNPAY_RETURN_URL = 'http://localhost:8000/payment_return'  # get from config
+# get from config
+VNPAY_RETURN_URL = 'https://vaccinationcenter-backend.onrender.com/payment_return/'
 VNPAY_PAYMENT_URL = 'https://sandbox.vnpayment.vn/paymentv2/vpcpay.html'  # get from config
 VNPAY_API_URL = 'https://sandbox.vnpayment.vn/merchant_webapi/api/transaction'
 VNPAY_TMN_CODE = os.environ.get('VNPAY_TMN_CODE')  # Website ID in VNPAY System, get from config
