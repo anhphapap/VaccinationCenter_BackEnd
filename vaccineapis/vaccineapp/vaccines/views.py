@@ -486,7 +486,7 @@ def payment(request):
         print("Form input not validate")
 
 
-
+@api_view(['GET'])
 def payment_ipn(request):
     inputData = request.GET
     if inputData:
