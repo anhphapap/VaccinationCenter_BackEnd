@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from vaccines.models import Category, Vaccine, User, VaccinationCampaign, Dose, Injection, Notification, PublicNotification, PrivateNotification, NotificationStatus, Order
+from vaccines.models import Category, Vaccine, User, VaccinationCampaign, Dose, Injection, Notification, PublicNotification, PrivateNotification, NotificationStatus, Order, OrderDetail
 import re
 
 
@@ -245,7 +245,24 @@ class NotificationStatusSerializer(serializers.ModelSerializer):
         model = NotificationStatus
         fields = ['id', 'public_notification', 'is_read']
 
+
+class OrderDetailSerializer(serializers.ModelSerializer):
+    vaccine = serializers.PrimaryKeyRelatedField(read_only=True)
+
+    class Meta:
+        model = OrderDetail
+        fields = ['id', 'vaccine', 'unit_price']
+
+
+class OrderSerializer(serializers.ModelSerializer):
+    order_details = OrderDetailSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = Order
+        fields = '__all__'
+
+
 class OrderStatusSerializer(serializers.ModelSerializer):
     class Meta:
         model = Order
-        fields = ['order_id', 'vnp_ResponseCode']
+        fields = ['id', 'order_id', 'vnp_ResponseCode']

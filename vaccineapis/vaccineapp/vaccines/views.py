@@ -19,10 +19,10 @@ from rest_framework import viewsets, generics, status
 from rest_framework.decorators import action
 from rest_framework.request import Request
 from vaccines.models import Vaccine, Category, User, VaccinationCampaign, Dose, Injection, PrivateNotification, NotificationStatus, PublicNotification, Order, OrderDetail
-from vaccines.serializers import VaccineSerializer, CategorySerializer, VaccineDetailSerializer, UserSerializer, VaccinationCampaignSerializer, InjectionSerializer, DoseSerializer, UserRegisterSerializer, UserProfileSerializer, ChangePasswordSerializer, PrivateNotificationSerializer, PublicNotificationSerializer, OrderStatusSerializer
+from vaccines.serializers import VaccineSerializer, CategorySerializer, VaccineDetailSerializer, UserSerializer, VaccinationCampaignSerializer, InjectionSerializer, DoseSerializer, UserRegisterSerializer, UserProfileSerializer, ChangePasswordSerializer, PrivateNotificationSerializer, PublicNotificationSerializer, OrderStatusSerializer, OrderSerializer
 from vaccines.paginators import CategoryPaginator, VaccinePaginator, InjectionPaginator, UserPaginator, VaccinationCampaignPaginator, DosePaginator
 from rest_framework.response import Response
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from vaccines.perms import IsStaff, UserOwner, InjectionOwner, NotificationOwner
 from reportlab.pdfgen import canvas
 from django.http import HttpResponse
@@ -431,8 +431,48 @@ def hmacsha512(key, data):
     byteData = data.encode('utf-8')
     return hmac.new(byteKey, byteData, hashlib.sha512).hexdigest()
 
-@api_view(['POST'])
+
+@api_view(['POST', 'PATCH'])
 def payment(request):
+    if request.method == 'PATCH':
+        id = request.data.get('id')
+        new_order_id = request.data.get('order_id')
+        try:
+            order = Order.objects.get(id=id)
+            order.order_id = new_order_id
+            order.save()
+            # Tạo lại link thanh toán mới
+            order_type = request.data.get('order_type', order.order_desc)
+            amount = request.data.get('amount', order.amount)
+            order_desc = request.data.get('order_desc', order.order_desc)
+            bank_code = request.data.get('bank_code', None)
+            language = request.data.get('language', None)
+            ipaddr = get_client_ip(request)
+            vnp = vnpay()
+            vnp.requestData['vnp_Version'] = '2.1.0'
+            vnp.requestData['vnp_Command'] = 'pay'
+            vnp.requestData['vnp_TmnCode'] = settings.VNPAY_TMN_CODE
+            vnp.requestData['vnp_Amount'] = int(amount) * 100
+            vnp.requestData['vnp_CurrCode'] = 'VND'
+            vnp.requestData['vnp_TxnRef'] = new_order_id
+            vnp.requestData['vnp_OrderInfo'] = order_desc
+            vnp.requestData['vnp_OrderType'] = order_type
+            if language and language != '':
+                vnp.requestData['vnp_Locale'] = language
+            else:
+                vnp.requestData['vnp_Locale'] = 'vn'
+            if bank_code and bank_code != "":
+                vnp.requestData['vnp_BankCode'] = bank_code
+            vnp.requestData['vnp_CreateDate'] = datetime.now().strftime(
+                '%Y%m%d%H%M%S')
+            vnp.requestData['vnp_IpAddr'] = ipaddr
+            vnp.requestData['vnp_ReturnUrl'] = settings.VNPAY_RETURN_URL
+            vnpay_payment_url = vnp.get_payment_url(
+                settings.VNPAY_PAYMENT_URL, settings.VNPAY_HASH_SECRET_KEY)
+            return JsonResponse({'RspCode': '00', 'Message': 'Order updated successfully', 'payment_url': vnpay_payment_url})
+        except Order.DoesNotExist:
+            return JsonResponse({'RspCode': '01', 'Message': 'Order not found'}, status=404)
+
     if request.method == 'POST':
         order_type = request.data.get('order_type')
         order_id = request.data.get('order_id')
@@ -447,7 +487,7 @@ def payment(request):
         vnp.requestData['vnp_Version'] = '2.1.0'
         vnp.requestData['vnp_Command'] = 'pay'
         vnp.requestData['vnp_TmnCode'] = settings.VNPAY_TMN_CODE
-        vnp.requestData['vnp_Amount'] = amount * 100
+        vnp.requestData['vnp_Amount'] = int(amount) * 100
         vnp.requestData['vnp_CurrCode'] = 'VND'
         vnp.requestData['vnp_TxnRef'] = order_id
         vnp.requestData['vnp_OrderInfo'] = order_desc
@@ -465,7 +505,6 @@ def payment(request):
         vnp.requestData['vnp_ReturnUrl'] = settings.VNPAY_RETURN_URL
         vnpay_payment_url = vnp.get_payment_url(
             settings.VNPAY_PAYMENT_URL, settings.VNPAY_HASH_SECRET_KEY)
-        print(vnpay_payment_url)
 
         order = Order.objects.create(
             order_id=order_id,
@@ -483,8 +522,9 @@ def payment(request):
             )
 
         return JsonResponse({'payment_url': vnpay_payment_url})
-    else:
-        print("Form input not validate")
+
+    return JsonResponse({'error': 'Invalid request method'}, status=405)
+
 
 @csrf_exempt
 @api_view(['GET'])
@@ -565,8 +605,6 @@ def payment_return(request):
             return JsonResponse({'RspCode': '02', 'Message': 'Order Already Updated'})
     else:
         return JsonResponse({'RspCode': '99', 'Message': 'Invalid request'})
-
-
 
 
 def get_client_ip(request):
@@ -699,5 +737,10 @@ class OrderStatusViewSet(viewsets.ViewSet, generics.RetrieveAPIView):
     serializer_class = OrderStatusSerializer
     queryset = Order.objects.all()
     lookup_field = 'order_id'
+    permission_classes = [IsAuthenticated]
 
+class OrderViewSet(viewsets.ModelViewSet):
+    serializer_class = OrderSerializer
+    queryset = Order.objects.all()
+    permission_classes = [IsAuthenticated]
 
