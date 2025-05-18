@@ -14,7 +14,7 @@ router.register(r'notifications', views.NotificationViewSet,
                 basename='notifications')
 router.register(r'order-status', views.OrderStatusViewSet,
                 basename='order-status')
-
+router.register(r'orders', views.OrderViewSet, basename='orders')
 
 urlpatterns = [
     path('', include(router.urls)),

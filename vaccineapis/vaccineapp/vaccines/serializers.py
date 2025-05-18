@@ -259,8 +259,7 @@ class OrderSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Order
-        fields = '__all__'
-
+        fields = ['id', 'created_date', 'updated_date', 'order_id', 'amount', 'user','vnp_ResponseCode', 'order_details']
 
 class OrderStatusSerializer(serializers.ModelSerializer):
     class Meta:

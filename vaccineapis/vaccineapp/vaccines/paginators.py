@@ -23,3 +23,5 @@ class UserPaginator(PageNumberPagination):
 class DosePaginator(PageNumberPagination):
     page_size = 10
 
+class OrderPaginator(PageNumberPagination):
+    page_size = 5

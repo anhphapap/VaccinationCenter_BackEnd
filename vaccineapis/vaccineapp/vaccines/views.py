@@ -20,7 +20,7 @@ from rest_framework.decorators import action
 from rest_framework.request import Request
 from vaccines.models import Vaccine, Category, User, VaccinationCampaign, Dose, Injection, PrivateNotification, NotificationStatus, PublicNotification, Order, OrderDetail
 from vaccines.serializers import VaccineSerializer, CategorySerializer, VaccineDetailSerializer, UserSerializer, VaccinationCampaignSerializer, InjectionSerializer, DoseSerializer, UserRegisterSerializer, UserProfileSerializer, ChangePasswordSerializer, PrivateNotificationSerializer, PublicNotificationSerializer, OrderStatusSerializer, OrderSerializer
-from vaccines.paginators import CategoryPaginator, VaccinePaginator, InjectionPaginator, UserPaginator, VaccinationCampaignPaginator, DosePaginator
+from vaccines.paginators import CategoryPaginator, VaccinePaginator, InjectionPaginator, UserPaginator, VaccinationCampaignPaginator, DosePaginator, OrderPaginator
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from vaccines.perms import IsStaff, UserOwner, InjectionOwner, NotificationOwner
@@ -739,8 +739,9 @@ class OrderStatusViewSet(viewsets.ViewSet, generics.RetrieveAPIView):
     lookup_field = 'order_id'
     permission_classes = [IsAuthenticated]
 
-class OrderViewSet(viewsets.ModelViewSet):
+class OrderViewSet(viewsets.ViewSet, generics.ListAPIView):
     serializer_class = OrderSerializer
     queryset = Order.objects.all()
     permission_classes = [IsAuthenticated]
+    pagination_class = OrderPaginator
 
