@@ -19,7 +19,7 @@ from rest_framework import viewsets, generics, status
 from rest_framework.decorators import action
 from rest_framework.request import Request
 from vaccines.models import Vaccine, Category, User, VaccinationCampaign, Dose, Injection, PrivateNotification, NotificationStatus, PublicNotification, Order, OrderDetail
-from vaccines.serializers import VaccineSerializer, CategorySerializer, VaccineDetailSerializer, UserSerializer, VaccinationCampaignSerializer, InjectionSerializer, DoseSerializer, UserRegisterSerializer, UserProfileSerializer, ChangePasswordSerializer, PrivateNotificationSerializer, PublicNotificationSerializer
+from vaccines.serializers import VaccineSerializer, CategorySerializer, VaccineDetailSerializer, UserSerializer, VaccinationCampaignSerializer, InjectionSerializer, DoseSerializer, UserRegisterSerializer, UserProfileSerializer, ChangePasswordSerializer, PrivateNotificationSerializer, PublicNotificationSerializer, OrderStatusSerializer
 from vaccines.paginators import CategoryPaginator, VaccinePaginator, InjectionPaginator, UserPaginator, VaccinationCampaignPaginator, DosePaginator
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny
@@ -471,14 +471,15 @@ def payment(request):
             order_id=order_id,
             amount=amount,
             order_desc=order_desc,
-            user=request.user
+            user=request.user,
+            vnp_ResponseCode="01"
         )
 
         for detail in order_details:
             OrderDetail.objects.create(
                 order=order,
                 vaccine_id=detail.get('vaccine_id'),
-                unit_price=detail.get('unit_price')
+                unit_price=detail.get('unit_price'),
             )
 
         return JsonResponse({'payment_url': vnpay_payment_url})
@@ -533,64 +534,39 @@ def payment_ipn(request):
 @api_view(['GET'])
 def payment_return(request):
     inputData = request.GET.dict()
-    return JsonResponse({"vnpay_params": inputData})
-    # if inputData:
-    #     vnp = vnpay()
-    #     vnp.responseData = inputData.dict()
-    #     order_id = inputData.get('vnp_TxnRef')
-    #     amount = int(inputData.get('vnp_Amount', 0)) / 100
-    #     order_desc = inputData.get('vnp_OrderInfo')
-    #     vnp_TransactionNo = inputData.get('vnp_TransactionNo')
-    #     vnp_ResponseCode = inputData.get('vnp_ResponseCode')
-    #     vnp_TmnCode = inputData.get('vnp_TmnCode')
-    #     vnp_PayDate = inputData.get('vnp_PayDate')
-    #     vnp_BankCode = inputData.get('vnp_BankCode')
-    #     vnp_CardType = inputData.get('vnp_CardType')
-    #     vnp_TransactionStatus = inputData.get('vnp_TransactionStatus')
-    #     vnp_BankTranNo = inputData.get('vnp_BankTranNo')
+    print("hello")
+    if inputData:
+        vnp = vnpay()
+        vnp.responseData = inputData.dict()
+        order_id = inputData.get('vnp_TxnRef')
+        amount = int(inputData.get('vnp_Amount', 0)) / 100
+        order_desc = inputData.get('vnp_OrderInfo')
+        vnp_TransactionNo = inputData.get('vnp_TransactionNo')
+        vnp_ResponseCode = inputData.get('vnp_ResponseCode')
+        vnp_TmnCode = inputData.get('vnp_TmnCode')
+        vnp_PayDate = inputData.get('vnp_PayDate')
+        vnp_BankCode = inputData.get('vnp_BankCode')
+        vnp_CardType = inputData.get('vnp_CardType')
+        vnp_TransactionStatus = inputData.get('vnp_TransactionStatus')
+        vnp_BankTranNo = inputData.get('vnp_BankTranNo')
+        order = Order.objects.filter(order_id=order_id)
+        if order.exists():
+            order.update(
+                vnp_TransactionNo=vnp_TransactionNo,
+                vnp_ResponseCode=vnp_ResponseCode,
+                vnp_TmnCode=vnp_TmnCode,
+                vnp_PayDate=datetime.strptime(
+                    vnp_PayDate, '%Y%m%d%H%M%S'),
+                vnp_BankCode=vnp_BankCode,
+                vnp_CardType=vnp_CardType,
+            )
+            return JsonResponse({'RspCode': '00', 'Message': 'Payment Success'})
+        else:
+            return JsonResponse({'RspCode': '02', 'Message': 'Order Already Updated'})
+    else:
+        return JsonResponse({'RspCode': '99', 'Message': 'Invalid request'})
 
-    #     if vnp.validate_response(settings.VNPAY_HASH_SECRET_KEY):
-    #         if vnp_ResponseCode == "00" and vnp_TransactionStatus == "00":
-    #             return JsonResponse({
-    #                 "title": "Kết quả thanh toán",
-    #                 "result": "Thành công",
-    #                 "order_id": order_id,
-    #                 "amount": amount,
-    #                 "order_desc": order_desc,
-    #                 "vnp_TransactionNo": vnp_TransactionNo,
-    #                 "vnp_ResponseCode": vnp_ResponseCode,
-    #                 "vnp_BankTranNo": vnp_BankTranNo,
-    #                 "vnp_BankCode": vnp_BankCode,
-    #                 "vnp_PayDate": vnp_PayDate
-    #             })
-    #         else:
-    #             return JsonResponse({
-    #                 "title": "Kết quả thanh toán",
-    #                 "result": "Lỗi",
-    #                 "order_id": order_id,
-    #                 "amount": amount,
-    #                 "order_desc": order_desc,
-    #                 "vnp_TransactionNo": vnp_TransactionNo,
-    #                 "vnp_ResponseCode": vnp_ResponseCode,
-    #                 "vnp_TransactionStatus": vnp_TransactionStatus
-    #             })
-    #     else:
-    #         return JsonResponse({
-    #             "title": "Kết quả thanh toán",
-    #             "result": "Lỗi",
-    #             "order_id": order_id,
-    #             "amount": amount,
-    #             "order_desc": order_desc,
-    #             "vnp_TransactionNo": vnp_TransactionNo,
-    #             "vnp_ResponseCode": vnp_ResponseCode,
-    #             "msg": "Sai checksum"
-    #         })
-    # else:
-    #     return JsonResponse({
-    #         "title": "Kết quả thanh toán",
-    #         "result": "Lỗi",
-    #         "msg": "Không có dữ liệu"
-    #     })
+
 
 
 def get_client_ip(request):
@@ -717,3 +693,11 @@ def refund(request):
             "error": f"Request failed with status code: {response.status_code}"}
 
     return render(request, "payment/refund.html", {"title": "Kết quả hoàn tiền giao dịch", "response_json": response_json})
+
+
+class OrderStatusViewSet(viewsets.ViewSet, generics.RetrieveAPIView):
+    serializer_class = OrderStatusSerializer
+    queryset = Order.objects.all()
+    lookup_field = 'order_id'
+
+

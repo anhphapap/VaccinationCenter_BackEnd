@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from vaccines.models import Category, Vaccine, User, VaccinationCampaign, Dose, Injection, Notification, PublicNotification, PrivateNotification, NotificationStatus
+from vaccines.models import Category, Vaccine, User, VaccinationCampaign, Dose, Injection, Notification, PublicNotification, PrivateNotification, NotificationStatus, Order
 import re
 
 
@@ -244,3 +244,8 @@ class NotificationStatusSerializer(serializers.ModelSerializer):
     class Meta:
         model = NotificationStatus
         fields = ['id', 'public_notification', 'is_read']
+
+class OrderStatusSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Order
+        fields = ['order_id', 'vnp_ResponseCode']

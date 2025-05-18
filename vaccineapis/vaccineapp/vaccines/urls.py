@@ -12,6 +12,8 @@ router.register(r'campaigns', views.VaccinationCampaignViewSet,
                 basename='vaccination-campaign')
 router.register(r'notifications', views.NotificationViewSet,
                 basename='notifications')
+router.register(r'order-status', views.OrderStatusViewSet,
+                basename='order-status')
 
 
 urlpatterns = [
