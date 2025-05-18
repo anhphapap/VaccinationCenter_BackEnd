@@ -485,7 +485,7 @@ def payment(request):
     else:
         print("Form input not validate")
 
-
+@csrf_exempt
 @api_view(['GET'])
 def payment_ipn(request):
     inputData = request.GET
