@@ -188,17 +188,16 @@ class NotificationStatus(models.Model):
         ]
 
 class Order(BaseModel):
-    order_id = models.CharField(primary_key=True, max_length=255)
+    order_id = models.CharField(max_length=255)
     amount = models.FloatField()
     order_desc = models.CharField(max_length=255)
-    vnp_TransactionNo = models.CharField(max_length=255)
-    vnp_ResponseCode = models.CharField(max_length=10)
-    vnp_TmnCode = models.CharField(max_length=255)
-    vnp_PayDate = models.DateTimeField(auto_now_add=True)
-    vnp_BankCode = models.CharField(max_length=255)
-    vnp_CardType = models.CharField(max_length=255)
-    user = models.ForeignKey(User, on_delete=models.CASCADE,
-                             related_name='orders')
+    vnp_TransactionNo = models.CharField(max_length=255, null=True, blank=True)
+    vnp_ResponseCode = models.CharField(max_length=10, null=True, blank=True)
+    vnp_TmnCode = models.CharField(max_length=255, null=True, blank=True)
+    vnp_PayDate = models.DateTimeField(auto_now_add=True, null=True, blank=True)
+    vnp_BankCode = models.CharField(max_length=255, null=True, blank=True)
+    vnp_CardType = models.CharField(max_length=255, null=True, blank=True)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='orders')
     
 class OrderDetail(BaseModel):
     order = models.ForeignKey(Order, on_delete=models.CASCADE,
