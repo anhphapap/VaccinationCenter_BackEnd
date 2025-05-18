@@ -533,7 +533,7 @@ def payment_ipn(request):
 
 @api_view(['GET'])
 def payment_return(request):
-    inputData = request.GET.dict()
+    inputData = request.GET
     print("hello")
     if inputData:
         vnp = vnpay()
