@@ -1,4 +1,5 @@
 from django.views.decorators.csrf import csrf_exempt
+from .firebase_config import send_push_notification
 from vaccines.models import Order
 from .vnpay import vnpay
 from .models import PaymentForm
@@ -17,7 +18,6 @@ import hashlib
 from django.http import HttpResponse
 from rest_framework import viewsets, generics, status
 from rest_framework.decorators import action
-from rest_framework.request import Request
 from vaccines.models import Vaccine, Category, User, VaccinationCampaign, Dose, Injection, PrivateNotification, NotificationStatus, PublicNotification, Order, OrderDetail
 from vaccines.serializers import VaccineSerializer, CategorySerializer, VaccineDetailSerializer, UserSerializer, VaccinationCampaignSerializer, InjectionSerializer, DoseSerializer, UserRegisterSerializer, UserProfileSerializer, ChangePasswordSerializer, PrivateNotificationSerializer, PublicNotificationSerializer, OrderStatusSerializer, OrderSerializer
 from vaccines.paginators import CategoryPaginator, VaccinePaginator, InjectionPaginator, UserPaginator, VaccinationCampaignPaginator, DosePaginator, OrderPaginator
@@ -30,8 +30,10 @@ from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import mm
+from django.db.models import Q
 import os
 from rest_framework.decorators import api_view
+from django.utils import timezone
 # Đăng ký font Arial
 FONT_PATH = os.path.join(os.path.dirname(__file__), 'fonts', 'arial.ttf')
 pdfmetrics.registerFont(TTFont('Arial', FONT_PATH))
@@ -251,6 +253,31 @@ class UserViewSet(viewsets.ModelViewSet):
         p.save()
         return response
 
+    @action(detail=False, methods=['post'], url_path='update-fcm-token')
+    def update_fcm_token(self, request):
+        try:
+            fcm_token = request.data.get('fcm_token')
+            if not fcm_token:
+                return Response({
+                    'status': 'error',
+                    'message': 'FCM token is required'
+                }, status=status.HTTP_400_BAD_REQUEST)
+
+            user = request.user
+            user.fcm_token = fcm_token
+            user.save()
+
+            return Response({
+                'status': 'success',
+                'message': 'FCM token updated successfully'
+            }, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            return Response({
+                'status': 'error',
+                'message': str(e)
+            }, status=status.HTTP_400_BAD_REQUEST)
+
 
 class InjectionViewSet(viewsets.ModelViewSet):
     serializer_class = InjectionSerializer
@@ -315,7 +342,7 @@ class DoseViewSet(viewsets.ModelViewSet):
 
 class NotificationViewSet(viewsets.ViewSet):
     def get_permissions(self):
-        if self.action in ['get_unread_count', 'get_all_notifications', 'mark_notification_read', 'mark_all_notifications_read']:
+        if self.action in ['get_unread_count', 'get_all_notifications', 'mark_notification_read', 'mark_all_notifications_read', 'test_firebase_notification']:
             return [NotificationOwner()]
         return [IsStaff()]
 
@@ -420,6 +447,35 @@ class NotificationViewSet(viewsets.ViewSet):
 
         return Response({'message': 'Đã đánh dấu tất cả thông báo đã đọc'},
                         status=status.HTTP_200_OK)
+
+    @action(detail=False, methods=['post'], url_path='test-firebase')
+    def test_firebase_notification(self, request):
+        try:
+            title = request.data.get('title', 'Test Notification')
+            message = request.data.get(
+                'message', 'This is a test notification')
+
+            # Gửi thông báo qua Firebase
+            send_push_notification(
+                token=request.user.fcm_token,
+                title=title,
+                body=message,
+                data={
+                    'type': 'test',
+                    'timestamp': str(timezone.now())
+                }
+            )
+
+            return Response({
+                'status': 'success',
+                'message': 'Test notification sent successfully'
+            }, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            return Response({
+                'status': 'error',
+                'message': str(e)
+            }, status=status.HTTP_400_BAD_REQUEST)
 
 
 def index(request):
@@ -739,9 +795,18 @@ class OrderStatusViewSet(viewsets.ViewSet, generics.RetrieveAPIView):
     lookup_field = 'order_id'
     permission_classes = [IsAuthenticated]
 
+
 class OrderViewSet(viewsets.ViewSet, generics.ListAPIView):
     serializer_class = OrderSerializer
-    queryset = Order.objects.all()
     permission_classes = [IsAuthenticated]
     pagination_class = OrderPaginator
 
+    def get_queryset(self):
+        queryset = Order.objects.filter(user=self.request.user)
+        status = self.request.query_params.get('status')
+        if status == 'paid':
+            queryset = queryset.filter(vnp_ResponseCode='00')
+        elif status == 'pending':
+            queryset = queryset.filter(
+                Q(vnp_ResponseCode='01') | Q(vnp_ResponseCode='24'))
+        return queryset

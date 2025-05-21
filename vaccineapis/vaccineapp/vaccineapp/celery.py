@@ -20,6 +20,6 @@ load_dotenv()
 app.conf.beat_schedule = {
     'send-injection-reminder': {
         'task': 'vaccines.tasks.send_injection_reminder',
-        'schedule': crontab(minute='*/1'),  # Run every minute
+        'schedule': crontab(hour='*/1'),
     },
 }

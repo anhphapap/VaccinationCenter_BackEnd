@@ -251,7 +251,7 @@ class OrderDetailSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = OrderDetail
-        fields = ['id', 'vaccine', 'unit_price']
+        fields = ['vaccine', 'unit_price']
 
 
 class OrderSerializer(serializers.ModelSerializer):
@@ -259,7 +259,9 @@ class OrderSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Order
-        fields = ['id', 'created_date', 'updated_date', 'order_id', 'amount', 'user','vnp_ResponseCode', 'order_details']
+        fields = ['id', 'created_date', 'updated_date', 'order_id',
+                  'amount', 'user', 'vnp_ResponseCode', 'order_details']
+
 
 class OrderStatusSerializer(serializers.ModelSerializer):
     class Meta:
