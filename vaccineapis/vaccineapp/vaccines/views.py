@@ -1,5 +1,4 @@
 from django.views.decorators.csrf import csrf_exempt
-from .firebase_config import send_push_notification
 from vaccines.models import Order
 from .vnpay import vnpay
 from .models import PaymentForm
@@ -342,7 +341,7 @@ class DoseViewSet(viewsets.ModelViewSet):
 
 class NotificationViewSet(viewsets.ViewSet):
     def get_permissions(self):
-        if self.action in ['get_unread_count', 'get_all_notifications', 'mark_notification_read', 'mark_all_notifications_read', 'test_firebase_notification']:
+        if self.action in ['get_unread_count', 'get_all_notifications', 'mark_notification_read', 'mark_all_notifications_read']:
             return [NotificationOwner()]
         return [IsStaff()]
 
@@ -447,35 +446,6 @@ class NotificationViewSet(viewsets.ViewSet):
 
         return Response({'message': 'Đã đánh dấu tất cả thông báo đã đọc'},
                         status=status.HTTP_200_OK)
-
-    @action(detail=False, methods=['post'], url_path='test-firebase')
-    def test_firebase_notification(self, request):
-        try:
-            title = request.data.get('title', 'Test Notification')
-            message = request.data.get(
-                'message', 'This is a test notification')
-
-            # Gửi thông báo qua Firebase
-            send_push_notification(
-                token=request.user.fcm_token,
-                title=title,
-                body=message,
-                data={
-                    'type': 'test',
-                    'timestamp': str(timezone.now())
-                }
-            )
-
-            return Response({
-                'status': 'success',
-                'message': 'Test notification sent successfully'
-            }, status=status.HTTP_200_OK)
-
-        except Exception as e:
-            return Response({
-                'status': 'error',
-                'message': str(e)
-            }, status=status.HTTP_400_BAD_REQUEST)
 
 
 def index(request):

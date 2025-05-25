@@ -1,7 +1,6 @@
 from django.contrib import admin
-from vaccines.models import Category, Vaccine, Injection, VaccinationCampaign, User, PublicNotification, NotificationStatus
+from .models import Category, Vaccine, User, VaccinationCampaign, Dose, Injection, PrivateNotification, PublicNotification, NotificationStatus, Order, OrderDetail
 from django.utils import timezone
-from .firebase_config import send_push_notification
 
 
 class VaccineAppAdmin(admin.AdminSite):
@@ -77,20 +76,6 @@ class VaccinationCampaignAdmin(BaseAdmin):
             ]
             # Sử dụng bulk_create để tạo nhiều bản ghi cùng lúc
             NotificationStatus.objects.bulk_create(notification_statuses)
-
-            # Send push notifications to all users with FCM tokens
-            for user in users:
-                if user.fcm_token:
-                    send_push_notification(
-                        token=user.fcm_token,
-                        title=notification.title,
-                        body=notification.message,
-                        data={
-                            'type': 'public',
-                            'notification_id': str(notification.id),
-                            'campaign_id': str(obj.id)
-                        }
-                    )
 
             # Reset trạng thái gửi thông báo
             obj.send_notification = False

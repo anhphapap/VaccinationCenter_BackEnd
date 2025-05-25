@@ -23,7 +23,6 @@ django-js-asset==3.1.2
 django-oauth-toolkit==3.0.1
 djangorestframework==3.16.0
 drf-yasg==1.21.10
-firebase-admin==6.8.0
 google-api-core==2.24.2
 google-api-python-client==2.169.0
 google-auth==2.40.1
