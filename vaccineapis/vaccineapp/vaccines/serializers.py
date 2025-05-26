@@ -36,6 +36,7 @@ class VaccineDetailSerializer(serializers.ModelSerializer):
 
 
 class UserSerializer(serializers.ModelSerializer):
+    birth_date = serializers.DateField(required=False)
     class Meta:
         model = User
         fields = '__all__'
@@ -88,7 +89,6 @@ class UserRegisterSerializer(serializers.ModelSerializer):
 
 
 class UserProfileSerializer(serializers.ModelSerializer):
-    birth_date = serializers.DateField(required=False)
     class Meta:
         model = User
         fields = ['first_name', 'last_name', 'email',
