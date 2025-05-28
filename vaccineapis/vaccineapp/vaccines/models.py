@@ -186,6 +186,7 @@ class NotificationStatus(models.Model):
             models.Index(fields=['user', 'is_read']),
         ]
 
+
 class Order(BaseModel):
     order_id = models.CharField(max_length=255)
     amount = models.FloatField()
@@ -193,20 +194,21 @@ class Order(BaseModel):
     vnp_TransactionNo = models.CharField(max_length=255, null=True, blank=True)
     vnp_ResponseCode = models.CharField(max_length=10, null=True, blank=True)
     vnp_TmnCode = models.CharField(max_length=255, null=True, blank=True)
-    vnp_PayDate = models.DateTimeField(auto_now_add=True, null=True, blank=True)
+    vnp_PayDate = models.DateTimeField(
+        auto_now_add=True, null=True, blank=True)
     vnp_BankCode = models.CharField(max_length=255, null=True, blank=True)
     vnp_CardType = models.CharField(max_length=255, null=True, blank=True)
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='orders')
-    
+    user = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name='orders')
+
+
 class OrderDetail(BaseModel):
     order = models.ForeignKey(Order, on_delete=models.CASCADE,
-                             related_name='order_details')
+                              related_name='order_details')
     vaccine = models.ForeignKey(Vaccine, on_delete=models.CASCADE,
-                             related_name='order_details')
+                                related_name='order_details')
     unit_price = models.FloatField()
 
-    
-    
 
 class PaymentForm(forms.Form):
 

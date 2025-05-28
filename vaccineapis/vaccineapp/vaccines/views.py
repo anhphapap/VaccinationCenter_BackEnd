@@ -252,31 +252,6 @@ class UserViewSet(viewsets.ModelViewSet):
         p.save()
         return response
 
-    @action(detail=False, methods=['post'], url_path='update-fcm-token')
-    def update_fcm_token(self, request):
-        try:
-            fcm_token = request.data.get('fcm_token')
-            if not fcm_token:
-                return Response({
-                    'status': 'error',
-                    'message': 'FCM token is required'
-                }, status=status.HTTP_400_BAD_REQUEST)
-
-            user = request.user
-            user.fcm_token = fcm_token
-            user.save()
-
-            return Response({
-                'status': 'success',
-                'message': 'FCM token updated successfully'
-            }, status=status.HTTP_200_OK)
-
-        except Exception as e:
-            return Response({
-                'status': 'error',
-                'message': str(e)
-            }, status=status.HTTP_400_BAD_REQUEST)
-
 
 class InjectionViewSet(viewsets.ModelViewSet):
     serializer_class = InjectionSerializer
