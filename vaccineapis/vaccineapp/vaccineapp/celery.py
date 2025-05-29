@@ -16,10 +16,3 @@ app.conf.enable_utc = False  # RẤT QUAN TRỌNG để Celery dùng local time
 # Load task modules from all registered Django app configs.
 app.autodiscover_tasks()
 load_dotenv()
-# Configure periodic tasks
-app.conf.beat_schedule = {
-    'send-injection-reminder': {
-        'task': 'vaccines.tasks.send_injection_reminder',
-        'schedule': crontab(hour='*/1'),
-    },
-}

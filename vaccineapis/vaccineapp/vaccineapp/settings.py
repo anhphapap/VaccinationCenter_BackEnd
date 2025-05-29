@@ -164,7 +164,7 @@ USE_TZ = True
 from celery.schedules import crontab
 CELERY_BEAT_SCHEDULE = {
     'warm-up-redis': {
-        'task': 'vaccineapp.tasks.warm_up_redis',
+        'task': 'vaccines.tasks.warm_up_redis',
         'schedule': crontab(hour=(4,23), minute=(55,55)),
     },
     'send-injection-reminder': {
