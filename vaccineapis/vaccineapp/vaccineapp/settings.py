@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
+from celery.schedules import crontab
 from django.utils import timezone
 import os
 import pymysql
@@ -161,11 +162,10 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 TIME_ZONE = 'Asia/Ho_Chi_Minh'
 USE_TZ = True
 # settings.py
-from celery.schedules import crontab
 CELERY_BEAT_SCHEDULE = {
     'warm-up-redis': {
         'task': 'vaccines.tasks.warm_up_redis',
-        'schedule': crontab(hour=(4,23), minute=(55,55)),
+        'schedule': crontab(hour=(4, 23), minute=(55, 55)),
     },
     'send-injection-reminder': {
         'task': 'vaccines.tasks.send_injection_reminder',
@@ -177,7 +177,7 @@ CELERY_BEAT_SCHEDULE = {
     },
 }
 CELERY_BROKER_URL = os.environ.get('CELERY_BROKER_URL')
-
+REDIS_URL = CELERY_BROKER_URL
 CELERY_BROKER_USE_SSL = {
     'ssl_cert_reqs': ssl.CERT_NONE,
     'ssl_check_hostname': False,
@@ -188,6 +188,7 @@ CELERY_BROKER_USE_SSL = {
 VNPAY_RETURN_URL = os.environ.get('VNPAY_RETURN_URL')
 VNPAY_PAYMENT_URL = 'https://sandbox.vnpayment.vn/paymentv2/vpcpay.html'  # get from config
 VNPAY_API_URL = 'https://sandbox.vnpayment.vn/merchant_webapi/api/transaction'
-VNPAY_TMN_CODE = os.environ.get('VNPAY_TMN_CODE')  # Website ID in VNPAY System, get from config
+# Website ID in VNPAY System, get from config
+VNPAY_TMN_CODE = os.environ.get('VNPAY_TMN_CODE')
 # Secret key for create checksum,get from config
 VNPAY_HASH_SECRET_KEY = os.environ.get('VNPAY_HASH_SECRET_KEY')
