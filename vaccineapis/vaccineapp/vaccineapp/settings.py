@@ -163,10 +163,10 @@ TIME_ZONE = 'Asia/Ho_Chi_Minh'
 USE_TZ = True
 # settings.py
 CELERY_BEAT_SCHEDULE = {
-    'warm-up-redis': {
-        'task': 'vaccines.tasks.warm_up_redis',
-        'schedule': crontab(hour=(4, 14), minute=(55, 20)),
-    },
+    # 'warm-up-redis': {
+    #     'task': 'vaccines.tasks.warm_up_redis',
+    #     'schedule': crontab(hour=(4, 14), minute=(55, 20)),
+    # },
     'send-injection-reminder': {
         'task': 'vaccines.tasks.send_injection_reminder',
         'schedule': crontab(hour=5, minute=0),
@@ -177,7 +177,7 @@ CELERY_BEAT_SCHEDULE = {
     },
     'update_missed_injections': {
         'task': 'vaccines.tasks.update_missed_injections',
-        'schedule': crontab(hour=14, minute=23),
+        'schedule': crontab(hour=14, minute=27),
     },
 }
 CELERY_BROKER_URL = os.environ.get('CELERY_BROKER_URL')
