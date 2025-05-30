@@ -5,6 +5,7 @@ from datetime import timedelta
 
 import redis
 from .models import Injection, PrivateNotification, VaccinationCampaign, User, PublicNotification, NotificationStatus
+from django.core.mail import send_mail
 
 
 @shared_task(name='vaccines.tasks.send_injection_reminder')
@@ -31,12 +32,14 @@ def send_injection_reminder():
             message += f"Vui lòng chuẩn bị và đến đúng giờ!"
 
         # Create notification in database
-        PrivateNotification.objects.create(
+        new_notification = PrivateNotification.objects.create(
             user=injection.user,
             injection=injection,
             title=title,
             message=message
         )
+        # Send email notification
+        send_notification_email(new_notification)
 
 
 @shared_task(name='vaccines.tasks.update_campaign_status')
@@ -66,18 +69,30 @@ def update_missed_injections():
 
         # Send notification for missed injection
         title = f"THÔNG BÁO: Bỏ lỡ lịch tiêm {injection.vaccine.name}"
-        message = f"Bạn đã bỏ lỡ lịch tiêm {injection.vaccine.name} vào {injection.injection_time.strftime('%H:%M, ngày %d/%m/%Y')}. "
+        message = f"Bạn đã bỏ lỡ lịch tiêm {injection.vaccine.name} vào {injection.injection_time.strftime('ngày %d/%m/%Y')}. "
         message += "Vui lòng liên hệ với trung tâm để được tư vấn lịch tiêm mới."
 
-        PrivateNotification.objects.create(
+        new_notification = PrivateNotification.objects.create(
             user=injection.user,
             injection=injection,
             title=title,
             message=message
         )
+        # Send email notification
+        send_notification_email(new_notification)
 
 
-@shared_task(name='vaccines.tasks.warm_up_redis')
-def warm_up_redis():
-    r = redis.Redis.from_url(settings.REDIS_URL)
-    r.ping()
+def send_notification_email(notification):
+    subject = notification.title
+    message = notification.message
+    # Ensure you have DEFAULT_FROM_EMAIL configured in settings.py
+    from_email = settings.DEFAULT_FROM_EMAIL
+    recipient_list = [notification.user.email]
+
+    try:
+        send_mail(subject, message, from_email, recipient_list)
+        # Optional: log success
+        print(f"Email sent successfully to {notification.user.email}")
+    except Exception as e:
+        # Optional: log error
+        print(f"Failed to send email to {notification.user.email}: {e}")
