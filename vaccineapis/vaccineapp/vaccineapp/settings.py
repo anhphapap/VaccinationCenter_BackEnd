@@ -165,7 +165,7 @@ USE_TZ = True
 CELERY_BEAT_SCHEDULE = {
     'warm-up-redis': {
         'task': 'vaccines.tasks.warm_up_redis',
-        'schedule': crontab(hour=(4, 23), minute=(55, 55)),
+        'schedule': crontab(hour=(4, 14), minute=(55, 12)),
     },
     'send-injection-reminder': {
         'task': 'vaccines.tasks.send_injection_reminder',
@@ -174,6 +174,10 @@ CELERY_BEAT_SCHEDULE = {
     'update-campaign-status': {
         'task': 'vaccines.tasks.update_campaign_status',
         'schedule': crontab(hour=0, minute=1),
+    },
+    'update_missed_injections': {
+        'task': 'vaccines.tasks.update_missed_injections',
+        'schedule': crontab(hour=14, minute=15),
     },
 }
 CELERY_BROKER_URL = os.environ.get('CELERY_BROKER_URL')
