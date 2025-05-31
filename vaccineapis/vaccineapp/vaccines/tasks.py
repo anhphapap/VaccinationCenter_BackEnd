@@ -89,6 +89,9 @@ def send_notification_email(notification):
     from_email = settings.DEFAULT_FROM_EMAIL
     recipient_list = [notification.user.email]
 
+    print(
+        f"DEBUG: Attempting to send email using API Key: {settings.EMAIL_HOST_PASSWORD}")
+
     try:
         send_mail(subject, message, from_email, recipient_list)
         # Optional: log success
