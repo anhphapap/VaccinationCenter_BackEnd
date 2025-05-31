@@ -37,6 +37,7 @@ class VaccineDetailSerializer(serializers.ModelSerializer):
 
 class UserSerializer(serializers.ModelSerializer):
     birth_date = serializers.DateField(required=False)
+
     class Meta:
         model = User
         fields = '__all__'
@@ -176,7 +177,7 @@ class InjectionSerializer(serializers.ModelSerializer):
         user = data.get('user')
         campaign = data.get('vaccination_campaign')
 
-        if campaign.id != 1:
+        if campaign and campaign.id != 1:
             existing_injection = Injection.objects.filter(
                 user=user,
                 vaccination_campaign=campaign,
@@ -193,7 +194,7 @@ class InjectionSerializer(serializers.ModelSerializer):
         PrivateNotification.objects.create(
             user=injection.user,
             title="Lịch tiêm mới",
-            message=f"Bạn có lịch tiêm mới cho vaccine {injection.vaccine.name} vào ngày {injection.injection_time.strftime('%d/%m/%Y')} lúc {injection.injection_time.strftime('%H:%M')}",
+            message=f"Bạn có lịch tiêm mới cho vaccine {injection.vaccine.name} vào ngày {injection.injection_time.strftime('%d/%m/%Y')}",
             injection=injection,
             is_read=False
         )
