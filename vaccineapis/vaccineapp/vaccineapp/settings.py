@@ -169,7 +169,7 @@ CELERY_BEAT_SCHEDULE = {
     # },
     'send-injection-reminder': {
         'task': 'vaccines.tasks.send_injection_reminder',
-        'schedule': crontab(hour=1, minute=5),
+        'schedule': crontab(hour=15, minute=5),
     },
     'update-campaign-status': {
         'task': 'vaccines.tasks.update_campaign_status',
