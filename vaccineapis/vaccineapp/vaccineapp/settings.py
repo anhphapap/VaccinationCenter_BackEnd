@@ -208,4 +208,6 @@ DEFAULT_FROM_EMAIL = 'pvcenter24@gmail.com'
 SERVER_EMAIL = 'pvcenter24@gmail.com'
 
 
-FRONTEND_URL = 'http://localhost:3000'
+# Frontend URL for email verification
+# Đọc từ biến môi trường, fallback về localhost cho dev
+FRONTEND_URL = 'https://vaccinationcenter-backend.onrender.com'
