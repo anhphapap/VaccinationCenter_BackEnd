@@ -22,7 +22,7 @@ from vaccines.serializers import VaccineSerializer, CategorySerializer, VaccineD
 from vaccines.paginators import CategoryPaginator, VaccinePaginator, InjectionPaginator, UserPaginator, VaccinationCampaignPaginator, DosePaginator, OrderPaginator
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny, IsAuthenticated
-from vaccines.perms import IsStaff, UserOwner, InjectionOwner, NotificationOwner
+from vaccines.perms import IsStaff, UserOwner, InjectionOwner, NotificationOwner, OrderOwner
 from reportlab.pdfgen import canvas
 from django.http import HttpResponse
 from reportlab.pdfbase import pdfmetrics
@@ -102,9 +102,17 @@ class VaccineViewSet(viewsets.ViewSet, generics.RetrieveAPIView, generics.ListAP
 
 
 class UserViewSet(viewsets.ModelViewSet):
-    queryset = User.objects.filter(is_active=True)
     serializer_class = UserSerializer
     pagination_class = UserPaginator
+
+    def get_queryset(self):
+        queryset = User.objects.filter(is_active=True)
+        name = self.request.query_params.get('name')
+
+        if name:
+            queryset = queryset.filter(
+                Q(first_name__icontains=name) | Q(last_name__icontains=name))
+        return queryset
 
     def get_permissions(self):
         if self.action == 'create':
@@ -122,7 +130,7 @@ class UserViewSet(viewsets.ModelViewSet):
     def get_serializer_class(self):
         if self.action == 'create':
             return UserRegisterSerializer
-        if self.action == 'partical_update':
+        if self.action == 'partial_update':
             return UserProfileSerializer
         return UserSerializer
 
@@ -265,7 +273,10 @@ class InjectionViewSet(viewsets.ModelViewSet):
         status = self.request.query_params.getlist('status')
         vaccine = self.request.query_params.get('vaccine')
         injection_date = self.request.query_params.get('injection_date')
+        full_name = self.request.query_params.get('name')
 
+        if user:
+            queryset = queryset.filter()
         if vaccine:
             queryset = queryset.filter(vaccine__name__icontains=vaccine)
 
@@ -274,6 +285,12 @@ class InjectionViewSet(viewsets.ModelViewSet):
 
         if injection_date:
             queryset = queryset.filter(injection_time__date=injection_date)
+
+        if full_name:
+            queryset = queryset.filter(
+                Q(user__first_name__icontains=full_name) |
+                Q(user__last_name__icontains=full_name)
+            )
 
         if sort_by == 'date_asc':
             queryset = queryset.order_by('injection_time', 'id')
@@ -286,7 +303,7 @@ class InjectionViewSet(viewsets.ModelViewSet):
 
     def get_permissions(self):
         if self.action == 'create':
-            return [UserOwner()]
+            return [OrderOwner()]
         return [IsStaff()]
 
 
@@ -743,7 +760,7 @@ class OrderStatusViewSet(viewsets.ViewSet, generics.RetrieveAPIView):
 
 class OrderViewSet(viewsets.ViewSet, generics.ListAPIView):
     serializer_class = OrderSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [OrderOwner]
     pagination_class = OrderPaginator
 
     def get_queryset(self):
@@ -754,4 +771,7 @@ class OrderViewSet(viewsets.ViewSet, generics.ListAPIView):
         elif status == 'pending':
             queryset = queryset.filter(
                 Q(vnp_ResponseCode='01') | Q(vnp_ResponseCode='24'))
+
+        queryset = queryset.order_by('-created_date')
+
         return queryset
