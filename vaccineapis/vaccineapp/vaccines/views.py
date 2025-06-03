@@ -33,6 +33,9 @@ from django.db.models import Q
 import os
 from rest_framework.decorators import api_view
 from django.utils import timezone
+from django.core.mail import send_mail
+from django.utils.crypto import get_random_string
+from datetime import timedelta
 # Đăng ký font Arial
 FONT_PATH = os.path.join(os.path.dirname(__file__), 'fonts', 'arial.ttf')
 pdfmetrics.registerFont(TTFont('Arial', FONT_PATH))
@@ -102,6 +105,7 @@ class VaccineViewSet(viewsets.ViewSet, generics.RetrieveAPIView, generics.ListAP
 
 
 class UserViewSet(viewsets.ModelViewSet):
+    queryset = User.objects.filter(is_active=True)
     serializer_class = UserSerializer
     pagination_class = UserPaginator
 
@@ -133,6 +137,78 @@ class UserViewSet(viewsets.ModelViewSet):
         if self.action == 'partial_update':
             return UserProfileSerializer
         return UserSerializer
+
+    def send_verification_email(self, user):
+        # Tạo token xác thực
+        token = get_random_string(length=32)
+        user.email_verification_token = token
+        user.email_verification_token_created_at = timezone.now()
+        user.save()
+
+        # Tạo link xác thực
+        verification_url = f"{settings.FRONTEND_URL}/verify-email?token={token}"
+
+        # Nội dung email
+        subject = 'Xác nhận địa chỉ email của bạn'
+        message = f'''
+        Xin chào {user.get_full_name() or user.username},
+
+        Cảm ơn bạn đã đăng ký tài khoản. Vui lòng nhấp vào đường link sau để xác nhận địa chỉ email của bạn:
+
+        {verification_url}
+
+        Link này sẽ hết hạn sau 24 giờ.
+
+        Nếu bạn không yêu cầu xác nhận email này, vui lòng bỏ qua email này.
+
+        Trân trọng,
+        Đội ngũ Vaccination Center
+        '''
+
+        # Gửi email
+        try:
+            send_mail(
+                subject,
+                message,
+                settings.DEFAULT_FROM_EMAIL,
+                [user.email],
+                fail_silently=False,
+            )
+            print("Test email sent successfully!")
+        except Exception as e:
+            print(f"Failed to send test email: {e}")
+
+    def partial_update(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.get_serializer(
+            instance, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+
+        # Kiểm tra nếu email được cập nhật
+        if 'email' in request.data and request.data['email'] != instance.email:
+            instance.email_verified = False
+            self.send_verification_email(instance)
+
+        self.perform_update(serializer)
+        return Response(serializer.data)
+
+    @action(detail=False, methods=['get'], url_path='verify-email/(?P<token>[^/.]+)')
+    def verify_email(self, request, token=None):
+        try:
+            user = User.objects.get(email_verification_token=token)
+
+            # Kiểm tra token có hết hạn chưa (24 giờ)
+            if user.email_verification_token_created_at < timezone.now() - timedelta(days=1):
+                return Response({'error': 'Link xác thực đã hết hạn'}, status=status.HTTP_400_BAD_REQUEST)
+
+            user.email_verified = True
+            user.email_verification_token = None
+            user.email_verification_token_created_at = None
+            user.save()
+
+            return Response({'message': 'Email đã được xác thực thành công'}, status=status.HTTP_200_OK)
+        except User.DoesNotExist:
+            return Response({'error': 'Token không hợp lệ'}, status=status.HTTP_400_BAD_REQUEST)
 
     @action(detail=True, methods=['get'], url_path='injections')
     def get_injections_by_user(self, request, pk=None):

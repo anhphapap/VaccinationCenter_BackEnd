@@ -206,3 +206,6 @@ EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 DEFAULT_FROM_EMAIL = 'pvcenter24@gmail.com'
 SERVER_EMAIL = 'pvcenter24@gmail.com'
+
+
+FRONTEND_URL = 'http://localhost:3000'
