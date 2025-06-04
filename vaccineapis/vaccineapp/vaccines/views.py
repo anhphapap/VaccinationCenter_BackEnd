@@ -1,14 +1,12 @@
 from django.views.decorators.csrf import csrf_exempt
 from vaccines.models import Order
 from .vnpay import vnpay
-from .models import PaymentForm
-from django.shortcuts import render, redirect
-from django.http import HttpResponse, HttpResponseRedirect, JsonResponse
+from django.shortcuts import render
+from django.http import HttpResponse, JsonResponse
 from django.conf import settings
 from datetime import datetime
 import requests
 import random
-import urllib.request
 import urllib.parse
 import urllib
 import json
@@ -36,7 +34,7 @@ from django.utils import timezone
 from django.core.mail import send_mail
 from django.utils.crypto import get_random_string
 from datetime import timedelta
-# Đăng ký font Arial
+# dang ky font Arial
 FONT_PATH = os.path.join(os.path.dirname(__file__), 'fonts', 'arial.ttf')
 pdfmetrics.registerFont(TTFont('Arial', FONT_PATH))
 
@@ -192,24 +190,6 @@ class UserViewSet(viewsets.ModelViewSet):
         self.perform_update(serializer)
         return Response(serializer.data)
 
-    @action(detail=False, methods=['get'], url_path='verify-email/(?P<token>[^/.]+)')
-    def verify_email(self, request, token=None):
-        try:
-            user = User.objects.get(email_verification_token=token)
-
-            # Kiểm tra token có hết hạn chưa (24 giờ)
-            if user.email_verification_token_created_at < timezone.now() - timedelta(days=1):
-                return Response({'error': 'Link xác thực đã hết hạn'}, status=status.HTTP_400_BAD_REQUEST)
-
-            user.email_verified = True
-            user.email_verification_token = None
-            user.email_verification_token_created_at = None
-            user.save()
-
-            return Response({'message': 'Email đã được xác thực thành công'}, status=status.HTTP_200_OK)
-        except User.DoesNotExist:
-            return Response({'error': 'Token không hợp lệ'}, status=status.HTTP_400_BAD_REQUEST)
-
     @action(detail=True, methods=['get'], url_path='injections')
     def get_injections_by_user(self, request, pk=None):
         user = self.get_object()
@@ -335,6 +315,22 @@ class UserViewSet(viewsets.ModelViewSet):
         p.showPage()
         p.save()
         return response
+
+
+def verify_email(request, token):
+    token = request.GET.get('token')
+    user = User.objects.filter(email_verification_token=token).first()
+    if user and not user.email_verified:
+        # Kiểm tra hạn token (24h)
+        if user.email_verification_token_created_at and user.email_verification_token_created_at < timezone.now() - timedelta(days=1):
+            return render(request, 'email_verification_failed.html', {'reason': 'Link xác thực đã hết hạn'})
+        user.email_verified = True
+        user.email_verification_token = None
+        user.email_verification_token_created_at = None
+        user.save()
+        return render(request, 'verification/email_verification_success.html')
+    else:
+        return render(request, 'verification/email_verification_failed.html', {'reason': 'Token không hợp lệ hoặc đã xác thực'})
 
 
 class InjectionViewSet(viewsets.ModelViewSet):

@@ -76,45 +76,66 @@ class VaccineAppAdmin(admin.AdminSite):
             vnp_ResponseCode='00'  # Mã phản hồi thành công từ VNPAY
         ).aggregate(total_revenue=Sum('amount'))['total_revenue']
 
-        # Số lượng vaccine đã mua theo tháng
+        # so luong vaccine da mua trong thang
         monthly_purchased_vaccines = OrderDetail.objects.filter(
             order__created_date__gte=start_of_month,
             order__created_date__lte=now,
             order__vnp_ResponseCode='00'
         ).count()
 
-        # Số lượng vaccine đã mua theo năm
+        # so luong vaccine da mua trong nam
         yearly_purchased_vaccines = OrderDetail.objects.filter(
             order__created_date__gte=start_of_year,
             order__created_date__lte=now,
             order__vnp_ResponseCode='00'
         ).count()
 
-        # Thống kê vaccine phổ biến theo tháng
+        # thong ke vaccine da mua trong thang
         popular_vaccines = OrderDetail.objects.filter(
             order__created_date__gte=start_of_month,
             order__created_date__lte=now,
             order__vnp_ResponseCode='00'
         ).values('vaccine__name').annotate(
             total_quantity=Count('id')
-        ).order_by('-total_quantity')[:10]  # Lấy top 10 vaccine phổ biến
+        ).order_by('-total_quantity')[:10]
 
-        # Chuẩn bị dữ liệu cho biểu đồ
+        # thong ke vaccine da mua trong quy
+        current_quarter = (now.month - 1) // 3 + 1
+        start_of_quarter = now.replace(
+            month=3 * current_quarter - 2, day=1, hour=0, minute=0, second=0, microsecond=0)
+
+        popular_vaccines_quarterly = OrderDetail.objects.filter(
+            order__created_date__gte=start_of_quarter,
+            order__created_date__lte=now,
+            order__vnp_ResponseCode='00'
+        ).values('vaccine__name').annotate(
+            total_quantity=Count('id')
+        ).order_by('-total_quantity')[:10]
+
+        # thong ke vaccine da mua trong nam
+        popular_vaccines_yearly = OrderDetail.objects.filter(
+            order__created_date__gte=start_of_year,
+            order__created_date__lte=now,
+            order__vnp_ResponseCode='00'
+        ).values('vaccine__name').annotate(
+            total_quantity=Count('id')
+        ).order_by('-total_quantity')[:10]
+
         vaccine_labels = [item['vaccine__name'] for item in popular_vaccines]
         vaccine_data = [item['total_quantity'] for item in popular_vaccines]
 
-        # Dữ liệu cho các biểu đồ (giữ lại cấu trúc cũ nếu cần sau này)
-        vaccine_category_labels = []
-        vaccine_category_data = []
-        injection_monthly_labels = []
-        injection_monthly_data = []
-        order_labels = []
-        order_data = []
-        user_data = [0, 0, 0]
+        vaccine_labels_quarterly = [item['vaccine__name']
+                                    for item in popular_vaccines_quarterly]
+        vaccine_data_quarterly = [item['total_quantity']
+                                  for item in popular_vaccines_quarterly]
+
+        vaccine_labels_yearly = [item['vaccine__name']
+                                 for item in popular_vaccines_yearly]
+        vaccine_data_yearly = [item['total_quantity']
+                               for item in popular_vaccines_yearly]
 
         context = {
             'title': 'Thống kê',
-            # Dữ liệu cho các thẻ thống kê
             'monthly_injections_count': monthly_injections_count,
             'monthly_success_rate': round(monthly_success_rate, 2),
             'monthly_revenue': monthly_revenue,
@@ -127,6 +148,11 @@ class VaccineAppAdmin(admin.AdminSite):
             # Dữ liệu cho biểu đồ
             'vaccine_labels': json.dumps(vaccine_labels),
             'vaccine_data': json.dumps(vaccine_data),
+            'vaccine_labels_quarterly': json.dumps(vaccine_labels_quarterly),
+            'vaccine_data_quarterly': json.dumps(vaccine_data_quarterly),
+            'vaccine_labels_yearly': json.dumps(vaccine_labels_yearly),
+            'vaccine_data_yearly': json.dumps(vaccine_data_yearly),
+            'current_quarter': current_quarter,
             'opts': Category._meta,
         }
         return TemplateResponse(request, 'admin/chart.html', context)
@@ -154,10 +180,12 @@ class VaccineAdmin(BaseAdmin):
 
 class InjectionAdmin(BaseAdmin):
     list_display = ('vaccine', 'user',
-                    'vaccination_campaign', 'injection_time')
+                    'vaccination_campaign', 'injection_time', 'status')
     search_fields = ('vaccine', 'user',
-                     'vaccination_campaign', 'injection_time')
-    list_filter = ('vaccine', 'user', 'vaccination_campaign', 'injection_time')
+                     'vaccination_campaign', 'injection_time', 'status')
+    list_filter = ('vaccine', 'user', 'vaccination_campaign',
+                   'injection_time', 'status')
+    list_editable = ('status',)
 
 
 class VaccinationCampaignAdmin(BaseAdmin):
@@ -176,9 +204,8 @@ class VaccinationCampaignAdmin(BaseAdmin):
             'description': 'Chọn để gửi thông báo công khai đến tất cả người dùng khi tạo đợt tiêm mới'
         }),
     )
-
+    #create noti after create campaign
     def save_model(self, request, obj, form, change):
-        # Lưu campaign trước
         super().save_model(request, obj, form, change)
 
         if not change and obj.send_notification:
@@ -198,13 +225,16 @@ class VaccinationCampaignAdmin(BaseAdmin):
                     is_read=False
                 ) for user in users
             ]
-            # Sử dụng bulk_create để tạo nhiều bản ghi cùng lúc
             NotificationStatus.objects.bulk_create(notification_statuses)
 
-            # Reset trạng thái gửi thông báo
             obj.send_notification = False
             obj.save()
 
+class OrderAdmin(BaseAdmin):
+    list_display = ('order_id', 'user', 'amount', 'vnp_ResponseCode', 'vnp_PayDate')
+    search_fields = ('order_id', 'user', 'amount', 'vnp_ResponseCode', 'vnp_PayDate')
+    list_filter = ('order_id', 'user', 'amount', 'vnp_ResponseCode', 'vnp_PayDate')
+    list_editable = ('vnp_ResponseCode',)
 
 class UserAdmin(BaseAdmin):
     list_display = ('username', 'first_name', 'last_name',
@@ -220,4 +250,5 @@ admin_site.register(Vaccine, VaccineAdmin)
 admin_site.register(Injection, InjectionAdmin)
 admin_site.register(VaccinationCampaign, VaccinationCampaignAdmin)
 admin_site.register(User, UserAdmin)
+admin_site.register(Order, OrderAdmin)
 # admin.site.register()

@@ -187,16 +187,49 @@
 
     </div> {# End of container-fluid #}
 </div> {# End of content #}
-
+<h1>Thống kê độ phổ biến của vaccine</h1>
 {# Biểu đồ thống kê vaccine phổ biến #}
 <div class="container-fluid mt-4">
-    <div class="card shadow mb-4">
-        <div class="card-header py-3">
-            <h6 class="m-0 font-weight-bold text-primary">Vaccine Phổ Biến Trong Tháng</h6>
+    <div class="row">
+        {# Biểu đồ theo tháng #}
+        <div class="col-md-4">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Vaccine Phổ Biến Trong Tháng</h6>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="popularVaccinesChart"></canvas>
+                    </div>
+                </div>
+            </div>
         </div>
-        <div class="card-body">
-            <div class="chart-container">
-                <canvas id="popularVaccinesChart"></canvas>
+
+        {# Biểu đồ theo quý #}
+        <div class="col-md-4">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Vaccine Phổ Biến Trong Quý {{ current_quarter }}</h6>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="popularVaccinesQuarterlyChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {# Biểu đồ theo năm #}
+        <div class="col-md-4">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Vaccine Phổ Biến Trong Năm</h6>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="popularVaccinesYearlyChart"></canvas>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -296,7 +329,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Khởi tạo biểu đồ vaccine phổ biến
+    // Khởi tạo biểu đồ vaccine phổ biến theo tháng
     const vaccineLabels = JSON.parse('{{ vaccine_labels|safe }}');
     const vaccineData = JSON.parse('{{ vaccine_data|safe }}');
     createBarChart(
@@ -306,17 +339,25 @@ document.addEventListener('DOMContentLoaded', function() {
         'Vaccine Phổ Biến Trong Tháng'
     );
 
-    // Để thêm biểu đồ mới, chỉ cần:
-    // 1. Thêm HTML canvas với id mới
-    // 2. Lấy dữ liệu từ Django context
-    // 3. Gọi hàm createBarChart với các tham số tương ứng
-    // Ví dụ:
-    // createBarChart(
-    //     'newChartId',
-    //     newLabels,
-    //     newData,
-    //     'Tiêu đề biểu đồ mới'
-    // );
+    // Khởi tạo biểu đồ vaccine phổ biến theo quý
+    const vaccineLabelsQuarterly = JSON.parse('{{ vaccine_labels_quarterly|safe }}');
+    const vaccineDataQuarterly = JSON.parse('{{ vaccine_data_quarterly|safe }}');
+    createBarChart(
+        'popularVaccinesQuarterlyChart',
+        vaccineLabelsQuarterly,
+        vaccineDataQuarterly,
+        `Vaccine Phổ Biến Trong Quý {{ current_quarter }}`
+    );
+
+    // Khởi tạo biểu đồ vaccine phổ biến theo năm
+    const vaccineLabelsYearly = JSON.parse('{{ vaccine_labels_yearly|safe }}');
+    const vaccineDataYearly = JSON.parse('{{ vaccine_data_yearly|safe }}');
+    createBarChart(
+        'popularVaccinesYearlyChart',
+        vaccineLabelsYearly,
+        vaccineDataYearly,
+        'Vaccine Phổ Biến Trong Năm'
+    );
 });
 </script>
 {% endblock %}

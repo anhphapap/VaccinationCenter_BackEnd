@@ -206,6 +206,10 @@ class Order(BaseModel):
     user = models.ForeignKey(
         User, on_delete=models.CASCADE, related_name='orders')
 
+    class Meta:
+        verbose_name = 'Đơn hàng'
+        verbose_name_plural = 'Đơn hàng'
+
 
 class OrderDetail(BaseModel):
     order = models.ForeignKey(Order, on_delete=models.CASCADE,
@@ -214,12 +218,3 @@ class OrderDetail(BaseModel):
                                 related_name='order_details')
     unit_price = models.FloatField()
 
-
-class PaymentForm(forms.Form):
-
-    order_id = forms.CharField(max_length=250)
-    order_type = forms.CharField(max_length=20)
-    amount = forms.IntegerField()
-    order_desc = forms.CharField(max_length=100)
-    bank_code = forms.CharField(max_length=20, required=False)
-    language = forms.CharField(max_length=2)
