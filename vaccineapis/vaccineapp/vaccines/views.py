@@ -182,13 +182,10 @@ class UserViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(
             instance, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
-
-        # Kiểm tra nếu email được cập nhật
+        self.perform_update(serializer)
         if 'email' in request.data and request.data['email'] != instance.email:
             instance.email_verified = False
             self.send_verification_email(instance)
-
-        self.perform_update(serializer)
         return Response(serializer.data)
 
     @action(detail=True, methods=['get'], url_path='injections')
@@ -323,13 +320,13 @@ def verify_email(request):
     user = User.objects.filter(email_verification_token=token).first()
     if user and not user.email_verified:
         # Kiểm tra hạn token (24h)
-        if user.email_verification_token_created_at and user.email_verification_token_created_at < timezone.now() - timedelta(days=1):
-            return render(request, 'email_verification_failed.html', {'reason': 'Link xác thực đã hết hạn'})
+        if user.email_verification_token_created_at and user.email_verification_token_created_at < timezone.now() - timedelta(minutes=5):
+            return render(request, 'verification/email_verification_failed.html', {'reason': 'Link xác thực đã hết hạn'})
         user.email_verified = True
         user.email_verification_token = None
         user.email_verification_token_created_at = None
         user.save()
-        return render(request, 'verification/email_verification_success.html')
+        return render(request, 'verification/email_verification_success.html', {'reason': 'Email đã được xác thực thành công'})
     else:
         return render(request, 'verification/email_verification_failed.html', {'reason': 'Token không hợp lệ hoặc đã xác thực'})
 
