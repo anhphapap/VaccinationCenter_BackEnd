@@ -24,5 +24,5 @@ urlpatterns = [
     path('payment_return/', views.payment_return, name='payment_return'),
     path('query/', views.query, name='query'),
     path('refund/', views.refund, name='refund'),
-    path('verify-email/<str:token>/', views.verify_email, name='verify_email'),
+    path('verify-email/', views.verify_email, name='verify_email'),
 ]
