@@ -93,7 +93,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ['first_name', 'last_name', 'email',
-                  'phone', 'address', 'birth_date', 'gender']
+                  'phone', 'address', 'birth_date', 'gender', 'avatar', 'is_completed_profile']
         extra_kwargs = {
             'phone': {
                 'required': True,
