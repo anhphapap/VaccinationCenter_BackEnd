@@ -179,11 +179,12 @@ class UserViewSet(viewsets.ModelViewSet):
 
     def partial_update(self, request, *args, **kwargs):
         instance = self.get_object()
+        old_email = instance.email
         serializer = self.get_serializer(
             instance, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         self.perform_update(serializer)
-        if 'email' in request.data and request.data['email'] != instance.email:
+        if 'email' in request.data and request.data['email'] != old_email:
             instance.email_verified = False
             self.send_verification_email(instance)
         return Response(serializer.data)
