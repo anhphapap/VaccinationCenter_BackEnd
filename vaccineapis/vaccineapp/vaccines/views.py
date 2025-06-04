@@ -145,6 +145,7 @@ class UserViewSet(viewsets.ModelViewSet):
 
         # Tạo link xác thực
         verification_url = f"{settings.FRONTEND_URL}/verify-email?token={token}"
+        print(verification_url)
 
         # Nội dung email
         subject = 'Xác nhận địa chỉ email của bạn'
@@ -317,7 +318,7 @@ class UserViewSet(viewsets.ModelViewSet):
         return response
 
 
-def verify_email(request, token):
+def verify_email(request):
     token = request.GET.get('token')
     user = User.objects.filter(email_verification_token=token).first()
     if user and not user.email_verified:
