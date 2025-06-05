@@ -177,14 +177,27 @@ class UserViewSet(viewsets.ModelViewSet):
         except Exception as e:
             print(f"Failed to send test email: {e}")
 
+    @action(detail=True, methods=['post'], url_path='resend-verification-email')
+    def resend_verification_email(self, request, pk=None):
+        user = self.get_object()
+        if user.email_verified:
+            return Response({'message': 'Email đã được xác thực trước đó'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Kiểm tra nếu token cũ vẫn còn hiệu lực (chưa quá 5 phút)
+        if user.email_verification_token_created_at and user.email_verification_token_created_at > timezone.now() - timedelta(minutes=5):
+            return Response({'message': 'Vui lòng đợi 5 phút trước khi yêu cầu gửi lại email xác thực'}, status=status.HTTP_400_BAD_REQUEST)
+
+        self.send_verification_email(user)
+        return Response({'message': 'Đã gửi lại email xác thực'}, status=status.HTTP_200_OK)
+
     def partial_update(self, request, *args, **kwargs):
         instance = self.get_object()
-        old_email = instance.email
         serializer = self.get_serializer(
             instance, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         self.perform_update(serializer)
-        if 'email' in request.data and request.data['email'] != old_email:
+        if 'email' in request.data:
+
             instance.email_verified = False
             self.send_verification_email(instance)
         return Response(serializer.data)
