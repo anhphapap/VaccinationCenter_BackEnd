@@ -106,6 +106,7 @@ class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.filter(is_active=True)
     serializer_class = UserSerializer
     pagination_class = UserPaginator
+    http_method_names = ['get', 'post', 'patch']
 
     def get_queryset(self):
         queryset = User.objects.filter(is_active=True)
@@ -348,7 +349,7 @@ def verify_email(request):
 class InjectionViewSet(viewsets.ModelViewSet):
     serializer_class = InjectionSerializer
     pagination_class = InjectionPaginator
-    # permission_classes = [IsStaff]
+    http_method_names = ['get', 'post', 'patch']
 
     def get_queryset(self):
         queryset = Injection.objects.filter(active=True)
@@ -391,7 +392,7 @@ class InjectionViewSet(viewsets.ModelViewSet):
         return [IsStaff()]
 
 
-class VaccinationCampaignViewSet(viewsets.ModelViewSet):
+class VaccinationCampaignViewSet(viewsets.ViewSet, generics.ListAPIView, generics.RetrieveAPIView):
     queryset = VaccinationCampaign.objects.all()
     serializer_class = VaccinationCampaignSerializer
 
@@ -399,12 +400,6 @@ class VaccinationCampaignViewSet(viewsets.ModelViewSet):
         if self.request.method.__eq__('GET'):
             return [AllowAny()]
         return [IsStaff()]
-
-    @action(detail=True, methods=['get'], url_path='injections', permission_classes=[IsStaff])
-    def get_injections_by_campaign(self, request, pk):
-        campaign = VaccinationCampaign.objects.get(id=pk)
-        injections = campaign.injections.filter(active=True)
-        return Response(InjectionSerializer(injections, many=True).data, status=status.HTTP_200_OK)
 
 
 class DoseViewSet(viewsets.ModelViewSet):
@@ -419,13 +414,7 @@ class NotificationViewSet(viewsets.ViewSet):
     def get_permissions(self):
         if self.action in ['get_unread_count', 'get_all_notifications', 'mark_notification_read', 'mark_all_notifications_read']:
             return [NotificationOwner()]
-        return [IsStaff()]
-
-    def get_queryset(self):
-        user = self.request.user
-        private_notifications = PrivateNotification.objects.filter(user=user)
-        public_notifications = PublicNotification.objects.all()
-        return list(private_notifications) + list(public_notifications)
+        return [IsAuthenticated()]
 
     def get_serializer_class(self):
         return PrivateNotificationSerializer
@@ -522,10 +511,6 @@ class NotificationViewSet(viewsets.ViewSet):
 
         return Response({'message': 'Đã đánh dấu tất cả thông báo đã đọc'},
                         status=status.HTTP_200_OK)
-
-
-def index(request):
-    return render(request, "payment/index.html", {"title": "Danh sách demo"})
 
 
 def hmacsha512(key, data):

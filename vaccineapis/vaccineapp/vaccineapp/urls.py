@@ -22,11 +22,11 @@ from vaccines.admin import admin_site
 
 schema_view = get_schema_view(
     openapi.Info(
-        title="Course API",
+        title="Vaccination Center API",
         default_version='v1',
-        description="APIs for CourseApp",
-        contact=openapi.Contact(email="2251052144vu@ou.edu.vn"),
-        license=openapi.License(name="Pha Vu @2025"),
+        description="APIs for VaccineApp",
+        contact=openapi.Contact(email="pvcenter24@gmail.com"),
+        license=openapi.License(name="PV Center @2025"),
     ),
     public=True,
     permission_classes=(permissions.AllowAny,),
