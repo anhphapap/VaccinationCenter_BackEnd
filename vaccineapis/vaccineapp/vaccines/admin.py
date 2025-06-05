@@ -1,11 +1,10 @@
+import html
 from django.contrib import admin
-from django.http import HttpResponse
-from django.shortcuts import render
 from .models import Category, Vaccine, User, VaccinationCampaign, Dose, Injection, PrivateNotification, PublicNotification, NotificationStatus, Order, OrderDetail, InjectionStatus
 from django.utils import timezone
 from django.urls import path
-from django.db.models import Count, Sum, F
-from datetime import timedelta, date
+from django.utils.safestring import mark_safe
+from django.db.models import Count, Sum
 import json
 from django.template.response import TemplateResponse
 
@@ -166,9 +165,13 @@ class BaseAdmin(admin.ModelAdmin):
 
 
 class CategoryAdmin(BaseAdmin):
-    list_display = ('name', 'image')
+    list_display = ('name',)
     search_fields = ('name',)
     list_filter = ('name',)
+    readonly_fields = ['image_view']
+
+    def image_view(self, obj):
+        return mark_safe(f"<img src='{obj.image}' width='120' />")
 
 
 class VaccineAdmin(BaseAdmin):
@@ -176,6 +179,10 @@ class VaccineAdmin(BaseAdmin):
     search_fields = ('name', 'disease', 'price')
     list_filter = ('name', 'disease', 'price')
     filter_horizontal = ('cates',)
+    readonly_fields = ['image_view']
+
+    def image_view(self, obj):
+        return mark_safe(f"<img src='{obj.image}' width='500' />")
 
 
 class InjectionAdmin(BaseAdmin):
@@ -204,7 +211,8 @@ class VaccinationCampaignAdmin(BaseAdmin):
             'description': 'Chọn để gửi thông báo công khai đến tất cả người dùng khi tạo đợt tiêm mới'
         }),
     )
-    #create noti after create campaign
+    # create noti after create campaign
+
     def save_model(self, request, obj, form, change):
         super().save_model(request, obj, form, change)
 
@@ -212,8 +220,7 @@ class VaccinationCampaignAdmin(BaseAdmin):
             notification = PublicNotification.objects.create(
                 title=f"Đợt tiêm mới: {obj.name}",
                 message=f"Đã có đợt tiêm mới: {obj.name}\n"
-                f"Thời gian: Từ {obj.start_date.strftime('%d/%m/%Y')} đến {obj.end_date.strftime('%d/%m/%Y')}\n"
-                f"Mô tả: {obj.description}",
+                f"Thời gian: Từ {obj.start_date.strftime('%d/%m/%Y')} đến {obj.end_date.strftime('%d/%m/%Y')}\n",
                 vaccine_campaign=obj
             )
 
@@ -230,11 +237,16 @@ class VaccinationCampaignAdmin(BaseAdmin):
             obj.send_notification = False
             obj.save()
 
+
 class OrderAdmin(BaseAdmin):
-    list_display = ('order_id', 'user', 'amount', 'vnp_ResponseCode', 'vnp_PayDate')
-    search_fields = ('order_id', 'user', 'amount', 'vnp_ResponseCode', 'vnp_PayDate')
-    list_filter = ('order_id', 'user', 'amount', 'vnp_ResponseCode', 'vnp_PayDate')
+    list_display = ('order_id', 'user', 'amount',
+                    'vnp_ResponseCode', 'vnp_PayDate')
+    search_fields = ('order_id', 'user', 'amount',
+                     'vnp_ResponseCode', 'vnp_PayDate')
+    list_filter = ('order_id', 'user', 'amount',
+                   'vnp_ResponseCode', 'vnp_PayDate')
     list_editable = ('vnp_ResponseCode',)
+
 
 class UserAdmin(BaseAdmin):
     list_display = ('username', 'first_name', 'last_name',
@@ -243,6 +255,11 @@ class UserAdmin(BaseAdmin):
                      'is_staff', 'is_superuser')
     list_filter = ('username', 'first_name', 'last_name',
                    'is_staff', 'is_superuser')
+    readonly_fields = ['image_view']
+
+    def image_view(self, obj):
+        return mark_safe(f"<img src='{obj.image}' width='120' />")
+
 
 
 admin_site.register(Category, CategoryAdmin)

@@ -150,7 +150,7 @@ class VaccinationCampaign(BaseModel):
 
 class Notification(models.Model):
     title = models.CharField(max_length=255)
-    message = models.TextField()
+    message = RichTextField()
     notification_date = models.DateTimeField(auto_now_add=True)
 
     class Meta:
