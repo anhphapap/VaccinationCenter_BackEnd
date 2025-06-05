@@ -156,7 +156,7 @@ class UserViewSet(viewsets.ModelViewSet):
 
         {verification_url}
 
-        Link này sẽ hết hạn sau 24 giờ.
+        Link này sẽ hết hạn sau 5 phút.
 
         Nếu bạn không yêu cầu xác nhận email này, vui lòng bỏ qua email này.
 
