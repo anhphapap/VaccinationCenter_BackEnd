@@ -20,4 +20,6 @@ urlpatterns = [
     path('', include(router.urls)),
     path('payment/', views.payment, name='payment'),
     path('verify-email/', views.verify_email, name='verify_email'),
+    path('payment_ipn', views.payment_ipn, name='payment_ipn'),
+    path('payment_return', views.payment_return, name='payment_return'),
 ]
