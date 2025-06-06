@@ -114,8 +114,7 @@ class UserViewSet(viewsets.ModelViewSet):
         name = self.request.query_params.get('name')
 
         if name:
-            queryset = queryset.filter(
-                Q(first_name__icontains=name) | Q(last_name__icontains=name))
+            queryset = queryset.filter(Q(first_name__icontains=name) | Q(last_name__icontains=name))
         return queryset
 
     def get_permissions(self):
@@ -139,7 +138,7 @@ class UserViewSet(viewsets.ModelViewSet):
         return UserSerializer
 
     def send_verification_email(self, user):
-        # Tạo token xác thực
+
         token = get_random_string(length=32)
         user.email_verification_token = token
         user.email_verification_token_created_at = timezone.now()
@@ -160,10 +159,7 @@ class UserViewSet(viewsets.ModelViewSet):
 
         Link này sẽ hết hạn sau 5 phút.
 
-        Nếu bạn không yêu cầu xác nhận email này, vui lòng bỏ qua email này.
-
-        Trân trọng,
-        Đội ngũ Vaccination Center
+        Vaccination Center
         '''
 
         # Gửi email
@@ -175,9 +171,9 @@ class UserViewSet(viewsets.ModelViewSet):
                 [user.email],
                 fail_silently=False,
             )
-            print("Test email sent successfully!")
+            print("thanh cong")
         except Exception as e:
-            print(f"Failed to send test email: {e}")
+            print(f"that bai: {e}")
 
     @action(detail=True, methods=['post'], url_path='resend-verification-email')
     def resend_verification_email(self, request, pk=None):
@@ -185,7 +181,6 @@ class UserViewSet(viewsets.ModelViewSet):
         if user.email_verified:
             return Response({'message': 'Email đã được xác thực trước đó'}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Kiểm tra nếu token cũ vẫn còn hiệu lực (chưa quá 5 phút)
         if user.email_verification_token_created_at and user.email_verification_token_created_at > timezone.now() - timedelta(minutes=5):
             return Response({'message': 'Vui lòng đợi 5 phút trước khi yêu cầu gửi lại email xác thực'}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -237,7 +232,7 @@ class UserViewSet(viewsets.ModelViewSet):
         return Response(UserSerializer(user).data, status=status.HTTP_200_OK)
 
     @action(detail=True, methods=['patch'], url_path='change-password')
-    def change_password(self, request, username):
+    def change_password(self, request, pk=None):
         user = request.user
         serializer = ChangePasswordSerializer(data=request.data)
 
@@ -373,10 +368,7 @@ class InjectionViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(injection_time__date=injection_date)
 
         if full_name:
-            queryset = queryset.filter(
-                Q(user__first_name__icontains=full_name) |
-                Q(user__last_name__icontains=full_name)
-            )
+            queryset = queryset.filter(Q(user__first_name__icontains=full_name) |Q(user__last_name__icontains=full_name))
 
         if sort_by == 'date_asc':
             queryset = queryset.order_by('injection_time', 'id')
@@ -428,10 +420,7 @@ class NotificationViewSet(viewsets.ViewSet):
         public_unread = NotificationStatus.objects.filter(
             user=user, is_read=False).count()
 
-        return Response(
-            {
-                'total_unread': private_unread + public_unread
-            }, status=status.HTTP_200_OK)
+        return Response({'total_unread': private_unread + public_unread}, status=status.HTTP_200_OK)
 
     @action(detail=False, methods=['get'], url_path='all')
     def get_all_notifications(self, request):
@@ -646,7 +635,7 @@ def payment_ipn(request):
                             vnp_PayDate, '%Y%m%d%H%M%S'),
                         vnp_BankCode=vnp_BankCode,
                         vnp_CardType=vnp_CardType,
-                        user=None  # Nếu IPN không có user thì để None hoặc mapping nếu có info
+                        user=None
                     )
                     return JsonResponse({'RspCode': '00', 'Message': 'Confirm Success'})
                 else:

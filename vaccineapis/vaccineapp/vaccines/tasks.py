@@ -31,14 +31,12 @@ def send_injection_reminder():
             message = f"Bạn có lịch tiêm {injection.vaccine.name} vào ngày mai. "
             message += f"Vui lòng chuẩn bị và đến đúng giờ!"
 
-        # Create notification in database
         new_notification = PrivateNotification.objects.create(
             user=injection.user,
             injection=injection,
             title=title,
             message=message
         )
-        # Send email notification
         send_notification_email(new_notification)
 
 
@@ -67,7 +65,6 @@ def update_missed_injections():
         injection.status = 'MISSED'
         injection.save()
 
-        # Send notification for missed injection
         title = f"THÔNG BÁO: Bỏ lỡ lịch tiêm {injection.vaccine.name}"
         message = f"Bạn đã bỏ lỡ lịch tiêm {injection.vaccine.name} vào {injection.injection_time.strftime('ngày %d/%m/%Y')}. "
         message += "Vui lòng liên hệ với trung tâm để được tư vấn lịch tiêm mới."
@@ -78,21 +75,18 @@ def update_missed_injections():
             title=title,
             message=message
         )
-        # Send email notification
+
         send_notification_email(new_notification)
 
 
 def send_notification_email(notification):
     subject = notification.title
     message = notification.message
-    # Ensure you have DEFAULT_FROM_EMAIL configured in settings.py
     from_email = settings.DEFAULT_FROM_EMAIL
     recipient_list = [notification.user.email]
 
     try:
         send_mail(subject, message, from_email, recipient_list)
-        # Optional: log success
         print(f"Email sent successfully to {notification.user.email}")
     except Exception as e:
-        # Optional: log error
         print(f"Failed to send email to {notification.user.email}: {e}")
