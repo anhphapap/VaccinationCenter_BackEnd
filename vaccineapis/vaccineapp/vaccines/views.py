@@ -55,9 +55,10 @@ class CategoryViewSet(viewsets.ViewSet, generics.ListAPIView):
     # lay danh sach vaccine theo category
     @action(detail=True, methods=['get'], url_path='vaccines')
     def get_vaccines_by_category(self, request, pk):
-        category = Category.objects.get(id=pk)
+        category = Category.objects.prefetch_related('vaccines').get(id=pk)
         vaccines = category.vaccines.filter(active=True)
         return Response(VaccineSerializer(vaccines, many=True).data, status=status.HTTP_200_OK)
+
 
 
 class VaccineViewSet(viewsets.ViewSet, generics.RetrieveAPIView, generics.ListAPIView):
@@ -79,7 +80,7 @@ class VaccineViewSet(viewsets.ViewSet, generics.RetrieveAPIView, generics.ListAP
         max_price = self.request.query_params.get('max_price')
         # tim kiem theo ten
         if q:
-            queryset = queryset.filter(name__icontains=q, active=True)
+            queryset = queryset.filter(name__icontains=q)
 
         # loc theo danh muc
         if cates:
@@ -99,7 +100,7 @@ class VaccineViewSet(viewsets.ViewSet, generics.RetrieveAPIView, generics.ListAP
         else:
             queryset = queryset.order_by('id')
 
-        return queryset
+        return queryset.prefetch_related('doses', 'cates')
 
 
 class UserViewSet(viewsets.ModelViewSet):

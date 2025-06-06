@@ -170,7 +170,7 @@ CELERY_BEAT_SCHEDULE = {
     # },
     'send-injection-reminder': {
         'task': 'vaccines.tasks.send_injection_reminder',
-        'schedule': crontab(hour=16, minute=15),
+        'schedule': crontab(hour=5, minute=0),
     },
     'update-campaign-status': {
         'task': 'vaccines.tasks.update_campaign_status',
@@ -178,7 +178,7 @@ CELERY_BEAT_SCHEDULE = {
     },
     'update_missed_injections': {
         'task': 'vaccines.tasks.update_missed_injections',
-        'schedule': crontab(hour=16, minute=15),
+        'schedule': crontab(hour=5, minute=5),
     },
 }
 CELERY_BROKER_URL = os.environ.get('CELERY_BROKER_URL')
