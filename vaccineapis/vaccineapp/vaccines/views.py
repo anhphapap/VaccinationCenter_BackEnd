@@ -192,7 +192,8 @@ class UserViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['get'], url_path='injections', pagination_class=InjectionPaginator)
     def get_injections_by_user(self, request, pk=None):
         user = self.get_object()
-        injections = user.injections.filter(active=True)
+        injections = user.injections.filter(active=True).select_related(
+            'vaccine', 'vaccination_campaign')
         sort_by = self.request.query_params.get('sort_by')
         status_param = self.request.query_params.getlist('status')
         vaccine = self.request.query_params.get('vaccine')
@@ -213,7 +214,15 @@ class UserViewSet(viewsets.ModelViewSet):
             injections = injections.order_by('-injection_time', 'id')
         else:
             injections = injections.order_by('id')
-        return Response(InjectionSerializer(injections, many=True).data, status=status.HTTP_200_OK)
+
+        paginator = InjectionPaginator()
+        page = paginator.paginate_queryset(injections, request)
+        if page is not None:
+            serializer = InjectionSerializer(page, many=True)
+            return paginator.get_paginated_response(serializer.data)
+
+        serializer = InjectionSerializer(injections, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
     @action(detail=False, methods=['get'], url_path='current-user')
     def get_current_user(self, request):
@@ -379,7 +388,7 @@ class InjectionViewSet(viewsets.ModelViewSet):
 class VaccinationCampaignViewSet(viewsets.ViewSet, generics.ListAPIView, generics.RetrieveAPIView):
     queryset = VaccinationCampaign.objects.all()
     serializer_class = VaccinationCampaignSerializer
-    permission_classes=[AllowAny]
+    permission_classes = [AllowAny]
 
 
 class DoseViewSet(viewsets.ModelViewSet):
@@ -388,10 +397,6 @@ class DoseViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         return Dose.objects.filter(active=True)
-
-
-
-
 
 
 class NotificationViewSet(viewsets.ViewSet):
