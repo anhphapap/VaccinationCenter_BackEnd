@@ -16,7 +16,7 @@ from django.http import HttpResponse
 from rest_framework import viewsets, generics, status
 from rest_framework.decorators import action
 from vaccines.models import Vaccine, Category, User, VaccinationCampaign, Dose, Injection, PrivateNotification, NotificationStatus, PublicNotification, Order, OrderDetail
-from vaccines.serializers import VaccineSerializer, CategorySerializer, VaccineDetailSerializer, UserSerializer, VaccinationCampaignSerializer, InjectionSerializer, DoseSerializer, UserRegisterSerializer, UserProfileSerializer, ChangePasswordSerializer, PrivateNotificationSerializer, PublicNotificationSerializer, OrderStatusSerializer, OrderSerializer
+from vaccines.serializers import VaccineSerializer, CategorySerializer, VaccineDetailSerializer, UserSerializer, VaccinationCampaignSerializer, InjectionSerializer, DoseSerializer, UserRegisterSerializer, ChangePasswordSerializer, PrivateNotificationSerializer, PublicNotificationSerializer, OrderStatusSerializer, OrderSerializer
 from vaccines.paginators import CategoryPaginator, VaccinePaginator, InjectionPaginator, UserPaginator, VaccinationCampaignPaginator, DosePaginator, OrderPaginator
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -60,9 +60,7 @@ class CategoryViewSet(viewsets.ViewSet, generics.ListAPIView):
         return Response(VaccineSerializer(vaccines, many=True).data, status=status.HTTP_200_OK)
 
 
-
 class VaccineViewSet(viewsets.ViewSet, generics.RetrieveAPIView, generics.ListAPIView):
-    queryset = Vaccine.objects.filter(active=True)
     pagination_class = VaccinePaginator
 
     def get_serializer_class(self):
@@ -70,29 +68,27 @@ class VaccineViewSet(viewsets.ViewSet, generics.RetrieveAPIView, generics.ListAP
             return VaccineDetailSerializer
         return VaccineSerializer
 
-    # tim kiem theo ten
     def get_queryset(self):
-        queryset = self.queryset
+        queryset = Vaccine.objects.filter(
+            active=True).prefetch_related('doses', 'cates')
         q = self.request.query_params.get('q')
         sort_by = self.request.query_params.get('sort_by')
         cates = self.request.query_params.getlist('cate')
         min_price = self.request.query_params.get('min_price')
         max_price = self.request.query_params.get('max_price')
-        # tim kiem theo ten
+
         if q:
             queryset = queryset.filter(name__icontains=q)
 
-        # loc theo danh muc
         if cates:
             cate_ids = [int(cate) for cate in cates]
             queryset = queryset.filter(cates__id__in=cate_ids).distinct()
-        # loc theo gia
+
         if min_price:
             queryset = queryset.filter(price__gte=float(min_price))
         if max_price:
             queryset = queryset.filter(price__lte=float(max_price))
 
-        # sap xep theo gia
         if sort_by == 'price_asc':
             queryset = queryset.order_by('price', 'id')
         elif sort_by == 'price_desc':
@@ -100,11 +96,10 @@ class VaccineViewSet(viewsets.ViewSet, generics.RetrieveAPIView, generics.ListAP
         else:
             queryset = queryset.order_by('id')
 
-        return queryset.prefetch_related('doses', 'cates')
+        return queryset
 
 
 class UserViewSet(viewsets.ModelViewSet):
-    queryset = User.objects.filter(is_active=True)
     serializer_class = UserSerializer
     pagination_class = UserPaginator
     http_method_names = ['get', 'post', 'patch']
@@ -114,27 +109,24 @@ class UserViewSet(viewsets.ModelViewSet):
         name = self.request.query_params.get('name')
 
         if name:
-            queryset = queryset.filter(Q(first_name__icontains=name) | Q(last_name__icontains=name))
+            queryset = queryset.filter(
+                Q(first_name__icontains=name) | Q(last_name__icontains=name))
         return queryset
 
     def get_permissions(self):
-        if self.action == 'create':
-            return [AllowAny()]
-        elif self.action == 'download_injection_certificate':
-            if self.request.user.is_staff:
-                return [IsStaff()]
-            return [UserOwner()]
+        if self.action == 'download_injection_certificate':
+            return [IsAuthenticated()]
         elif self.action in ['list'] or self.request.user.is_staff:
             return [IsStaff()]
-        elif self.action in ['retrieve', 'update', 'partial_update', 'delete', 'get_injections_by_user', 'change_password', 'get_current_user']:
+        elif self.action in ['retrieve', 'partial_update', 'get_injections_by_user', 'change_password', 'get_current_user']:
             return [UserOwner()]
-        return [IsStaff()]
+        return [AllowAny()]
 
     def get_serializer_class(self):
         if self.action == 'create':
             return UserRegisterSerializer
-        if self.action == 'partial_update':
-            return UserProfileSerializer
+        if self.action == 'change_password':
+            return ChangePasswordSerializer
         return UserSerializer
 
     def send_verification_email(self, user):
@@ -144,11 +136,9 @@ class UserViewSet(viewsets.ModelViewSet):
         user.email_verification_token_created_at = timezone.now()
         user.save()
 
-        # Tạo link xác thực
         verification_url = f"{settings.FRONTEND_URL}/verify-email?token={token}"
         print(verification_url)
 
-        # Nội dung email
         subject = 'Xác nhận địa chỉ email của bạn'
         message = f'''
         Xin chào {user.get_full_name() or user.username},
@@ -199,10 +189,9 @@ class UserViewSet(viewsets.ModelViewSet):
             self.send_verification_email(instance)
         return Response(serializer.data)
 
-    @action(detail=True, methods=['get'], url_path='injections')
+    @action(detail=True, methods=['get'], url_path='injections', pagination_class=InjectionPaginator)
     def get_injections_by_user(self, request, pk=None):
         user = self.get_object()
-        # self.check_object_permissions(request, user)
         injections = user.injections.filter(active=True)
         sort_by = self.request.query_params.get('sort_by')
         status_param = self.request.query_params.getlist('status')
@@ -330,7 +319,6 @@ def verify_email(request):
     token = request.GET.get('token')
     user = User.objects.filter(email_verification_token=token).first()
     if user and not user.email_verified:
-        # Kiểm tra hạn token (24h)
         if user.email_verification_token_created_at and user.email_verification_token_created_at < timezone.now() - timedelta(minutes=5):
             return render(request, 'verification/email_verification_failed.html', {'reason': 'Link xác thực đã hết hạn'})
         user.email_verified = True
@@ -348,13 +336,15 @@ class InjectionViewSet(viewsets.ModelViewSet):
     http_method_names = ['get', 'post', 'patch']
 
     def get_queryset(self):
-        queryset = Injection.objects.filter(active=True)
+        queryset = Injection.objects.filter(active=True).select_related(
+            'user', 'vaccine', 'vaccination_campaign'
+        )
         user = self.request.user
         sort_by = self.request.query_params.get('sort_by')
         status = self.request.query_params.getlist('status')
         vaccine = self.request.query_params.get('vaccine')
         injection_date = self.request.query_params.get('injection_date')
-        full_name = self.request.query_params.get('name')
+        name = self.request.query_params.get('name')
 
         if user:
             queryset = queryset.filter()
@@ -367,8 +357,9 @@ class InjectionViewSet(viewsets.ModelViewSet):
         if injection_date:
             queryset = queryset.filter(injection_time__date=injection_date)
 
-        if full_name:
-            queryset = queryset.filter(Q(user__first_name__icontains=full_name) |Q(user__last_name__icontains=full_name))
+        if name:
+            queryset = queryset.filter(Q(user__first_name__icontains=name) | Q(
+                user__last_name__icontains=name))
 
         if sort_by == 'date_asc':
             queryset = queryset.order_by('injection_time', 'id')
@@ -381,18 +372,14 @@ class InjectionViewSet(viewsets.ModelViewSet):
 
     def get_permissions(self):
         if self.action == 'create':
-            return [OrderOwner()]
+            return [InjectionOwner()]
         return [IsStaff()]
 
 
 class VaccinationCampaignViewSet(viewsets.ViewSet, generics.ListAPIView, generics.RetrieveAPIView):
     queryset = VaccinationCampaign.objects.all()
     serializer_class = VaccinationCampaignSerializer
-
-    def get_permissions(self):
-        if self.request.method.__eq__('GET'):
-            return [AllowAny()]
-        return [IsStaff()]
+    permission_classes=[AllowAny]
 
 
 class DoseViewSet(viewsets.ModelViewSet):
@@ -401,6 +388,10 @@ class DoseViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         return Dose.objects.filter(active=True)
+
+
+
+
 
 
 class NotificationViewSet(viewsets.ViewSet):

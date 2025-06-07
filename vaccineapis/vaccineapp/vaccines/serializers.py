@@ -36,65 +36,12 @@ class VaccineDetailSerializer(serializers.ModelSerializer):
 
 
 class UserSerializer(serializers.ModelSerializer):
-    birth_date = serializers.DateField(required=False)
 
     class Meta:
         model = User
         fields = '__all__'
         extra_kwargs = {
-            "password": {"write_only": True}
-        }
-
-
-class UserRegisterSerializer(serializers.ModelSerializer):
-    password = serializers.CharField(write_only=True, required=True,
-                                     error_messages={'required': 'Bạn phải nhập mật khẩu'})
-
-    class Meta:
-        model = User
-        fields = ['username', 'password']
-        extra_kwargs = {
-            'username': {
-                'required': True,
-                'error_messages': {
-                    'required': 'Bạn phải nhập tên đăng nhập'
-                }
-            },
-        }
-
-    def validate_password(self, password):
-        if len(password) < 8:
-            raise serializers.ValidationError(
-                "Mật khẩu phải có ít nhất 8 ký tự")
-        if not re.search(r'[A-Za-z]', password) or not re.search(r'[0-9]', password):
-            raise serializers.ValidationError(
-                "Mật khẩu phải có ít nhất 1 chữ cái và 1 số")
-        return password
-
-    def create(self, validated_data):
-        user = User(**validated_data)
-        user.set_password(validated_data['password'])
-        user.save()
-        return user
-
-    def to_internal_value(self, data):
-        try:
-            return super().to_internal_value(data)
-        except serializers.ValidationError as exc:
-            errors = exc.detail
-            if 'username' in errors:
-                for i, msg in enumerate(errors['username']):
-                    if 'already exists' in msg or 'unique' in msg:
-                        errors['username'][i] = "Tên đăng nhập đã tồn tại!"
-            raise serializers.ValidationError(errors)
-
-
-class UserProfileSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = User
-        fields = ['first_name', 'last_name', 'email',
-                  'phone', 'address', 'birth_date', 'gender', 'avatar', 'is_completed_profile']
-        extra_kwargs = {
+            "password": {"write_only": True},
             'phone': {
                 'required': True,
                 'error_messages': {
@@ -133,7 +80,52 @@ class UserProfileSerializer(serializers.ModelSerializer):
             }
         }
 
-# serializers.py
+
+class UserRegisterSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ['username', 'password']
+        extra_kwargs = {
+            'username': {
+                'required': True,
+                'error_messages': {
+                    'required': 'Bạn phải nhập tên đăng nhập'
+                }
+            },
+            'password': {
+                'write_only': True,
+                'required': True,
+                'error_messages': {
+                    'required': 'Bạn phải nhập mật khẩu'
+                }
+            }
+        }
+
+    def validate_password(self, password):
+        if len(password) < 8:
+            raise serializers.ValidationError(
+                'Mật khẩu phải có ít nhất 8 ký tự')
+        if not re.search(r'[A-Za-z]', password) or not re.search(r'[0-9]', password):
+            raise serializers.ValidationError(
+                'Mật khẩu phải có ít nhất 1 chữ cái và 1 số')
+        return password
+
+    def create(self, validated_data):
+        user = User(**validated_data)
+        user.set_password(validated_data['password'])
+        user.save()
+        return user
+
+    # def to_internal_value(self, data):
+    #     try:
+    #         return super().to_internal_value(data)
+    #     except serializers.ValidationError as exc:
+    #         errors = exc.detail
+    #         if 'username' in errors:
+    #             for i, msg in enumerate(errors['username']):
+    #                 if 'already exists' in msg or 'unique' in msg:
+    #                     errors['username'][i] = "Tên đăng nhập đã tồn tại!"
+    #         raise serializers.ValidationError(errors)
 
 
 class ChangePasswordSerializer(serializers.Serializer):
@@ -177,14 +169,14 @@ class InjectionSerializer(serializers.ModelSerializer):
         user = data.get('user')
         campaign = data.get('vaccination_campaign')
 
-        if campaign and campaign.id != 1:
-            existing_injection = Injection.objects.filter(
+        if campaign.id != 1:
+            injection = Injection.objects.filter(
                 user=user,
                 vaccination_campaign=campaign,
                 active=True
             ).select_related('vaccination_campaign').first()
 
-            if existing_injection:
+            if injection:
                 raise serializers.ValidationError(
                     {"error": "Bạn đã đăng ký đợt tiêm cộng đồng này trước đó"})
         return data
@@ -206,6 +198,12 @@ class DoseSerializer(serializers.ModelSerializer):
     class Meta:
         model = Dose
         fields = '__all__'
+
+
+
+
+
+
 
 
 class NotificationSerializer(serializers.ModelSerializer):
