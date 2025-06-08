@@ -114,9 +114,7 @@ class UserViewSet(viewsets.ModelViewSet):
         return queryset
 
     def get_permissions(self):
-        if self.action == 'download_injection_certificate':
-            return [IsAuthenticated()]
-        elif self.action in ['list'] or self.request.user.is_staff:
+        if self.action in ['list'] or self.request.user.is_staff:
             return [IsStaff()]
         elif self.action in ['retrieve', 'partial_update', 'get_injections_by_user', 'change_password', 'get_current_user']:
             return [UserOwner()]
@@ -272,15 +270,12 @@ class InjectionViewSet(viewsets.ModelViewSet):
         queryset = Injection.objects.filter(active=True).select_related(
             'user', 'vaccine', 'vaccination_campaign'
         )
-        user = self.request.user
         sort_by = self.request.query_params.get('sort_by')
         status = self.request.query_params.getlist('status')
         vaccine = self.request.query_params.get('vaccine')
         injection_date = self.request.query_params.get('injection_date')
         name = self.request.query_params.get('name')
 
-        if user:
-            queryset = queryset.filter()
         if vaccine:
             queryset = queryset.filter(vaccine__name__icontains=vaccine)
 
@@ -288,11 +283,10 @@ class InjectionViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(status__in=status)
 
         if injection_date:
-            queryset = queryset.filter(injection_time__date=injection_date)
+            queryset = queryset.filter(injection_time=injection_date)
 
         if name:
-            queryset = queryset.filter(Q(user__first_name__icontains=name) | Q(
-                user__last_name__icontains=name))
+            queryset = queryset.filter(Q(user__first_name__icontains=name) | Q(user__last_name__icontains=name))
 
         if sort_by == 'date_asc':
             queryset = queryset.order_by('injection_time', 'id')
@@ -304,14 +298,9 @@ class InjectionViewSet(viewsets.ModelViewSet):
         return queryset
 
     def get_permissions(self):
-        if self.action == 'create':
-            return [InjectionOwner()]
-        if self.action == 'download_injection_certificate':
-            if self.request.user.is_staff:
-                return [IsStaff()]
-            return [InjectionOwner()]
-
-        return [IsStaff()]
+        if self.action in ['retrieve'] and not self.request.user.is_staff:
+            return [UserOwner()]
+        return [IsAuthenticated()]
 
     @action(detail=True, methods=['get'], url_path='certificate')
     def download_injection_certificate(self, request, pk=None):
@@ -321,7 +310,7 @@ class InjectionViewSet(viewsets.ModelViewSet):
             else:
                 injection = Injection.objects.get(id=pk, user=request.user)
         except Injection.DoesNotExist:
-            return Response({'error': 'Injection không tồn tại hoặc không thuộc về user này'}, status=status.HTTP_404_NOT_FOUND)
+            return Response({'error': 'Lịch tiêm không tồn tại hoặc không thuộc về người dùng này'}, status=status.HTTP_404_NOT_FOUND)
 
         response = HttpResponse(content_type='application/pdf')
         response['Content-Disposition'] = f'attachment; filename="certificate_{injection.user.username}_injection_{injection.id}.pdf"'
