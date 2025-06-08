@@ -152,7 +152,6 @@ class UserViewSet(viewsets.ModelViewSet):
         Vaccination Center
         '''
 
-        # Gửi email
         try:
             send_mail(
                 subject,
@@ -391,13 +390,6 @@ class VaccinationCampaignViewSet(viewsets.ViewSet, generics.ListAPIView, generic
     permission_classes = [AllowAny]
 
 
-class DoseViewSet(viewsets.ModelViewSet):
-    serializer_class = DoseSerializer
-    pagination_class = DosePaginator
-
-    def get_queryset(self):
-        return Dose.objects.filter(active=True)
-
 
 class NotificationViewSet(viewsets.ViewSet):
     def get_permissions(self):
@@ -487,11 +479,9 @@ class NotificationViewSet(viewsets.ViewSet):
     def mark_all_notifications_read(self, request):
         user = request.user
 
-        # Đánh dấu tất cả thông báo private đã đọc
         PrivateNotification.objects.filter(
             user=user, is_read=False).update(is_read=True)
 
-        # Đánh dấu tất cả thông báo public đã đọc
         NotificationStatus.objects.filter(
             user=user, is_read=False).update(is_read=True)
 
@@ -514,7 +504,6 @@ def payment(request):
             order = Order.objects.get(id=id)
             order.order_id = new_order_id
             order.save()
-            # Tạo lại link thanh toán mới
             order_type = request.data.get('order_type', order.order_desc)
             amount = request.data.get('amount', order.amount)
             order_desc = request.data.get('order_desc', order.order_desc)
@@ -695,115 +684,6 @@ while len(n_str) < 12:
     n_str = '0' + n_str
 
 
-def query(request):
-    if request.method == 'GET':
-        return render(request, "payment/query.html", {"title": "Kiểm tra kết quả giao dịch"})
-
-    url = settings.VNPAY_API_URL
-    secret_key = settings.VNPAY_HASH_SECRET_KEY
-    vnp_TmnCode = settings.VNPAY_TMN_CODE
-    vnp_Version = '2.1.0'
-
-    vnp_RequestId = n_str
-    vnp_Command = 'querydr'
-    vnp_TxnRef = request.POST['order_id']
-    vnp_OrderInfo = 'kiem tra gd'
-    vnp_TransactionDate = request.POST['trans_date']
-    vnp_CreateDate = datetime.now().strftime('%Y%m%d%H%M%S')
-    vnp_IpAddr = get_client_ip(request)
-
-    hash_data = "|".join([
-        vnp_RequestId, vnp_Version, vnp_Command, vnp_TmnCode,
-        vnp_TxnRef, vnp_TransactionDate, vnp_CreateDate,
-        vnp_IpAddr, vnp_OrderInfo
-    ])
-
-    secure_hash = hmac.new(secret_key.encode(),
-                           hash_data.encode(), hashlib.sha512).hexdigest()
-
-    data = {
-        "vnp_RequestId": vnp_RequestId,
-        "vnp_TmnCode": vnp_TmnCode,
-        "vnp_Command": vnp_Command,
-        "vnp_TxnRef": vnp_TxnRef,
-        "vnp_OrderInfo": vnp_OrderInfo,
-        "vnp_TransactionDate": vnp_TransactionDate,
-        "vnp_CreateDate": vnp_CreateDate,
-        "vnp_IpAddr": vnp_IpAddr,
-        "vnp_Version": vnp_Version,
-        "vnp_SecureHash": secure_hash
-    }
-
-    headers = {"Content-Type": "application/json"}
-
-    response = requests.post(url, headers=headers, data=json.dumps(data))
-
-    if response.status_code == 200:
-        response_json = json.loads(response.text)
-    else:
-        response_json = {
-            "error": f"Request failed with status code: {response.status_code}"}
-
-    return render(request, "payment/query.html", {"title": "Kiểm tra kết quả giao dịch", "response_json": response_json})
-
-
-def refund(request):
-    if request.method == 'GET':
-        return render(request, "payment/refund.html", {"title": "Hoàn tiền giao dịch"})
-
-    url = settings.VNPAY_API_URL
-    secret_key = settings.VNPAY_HASH_SECRET_KEY
-    vnp_TmnCode = settings.VNPAY_TMN_CODE
-    vnp_RequestId = n_str
-    vnp_Version = '2.1.0'
-    vnp_Command = 'refund'
-    vnp_TransactionType = request.POST['TransactionType']
-    vnp_TxnRef = request.POST['order_id']
-    vnp_Amount = request.POST['amount']
-    vnp_OrderInfo = request.POST['order_desc']
-    vnp_TransactionNo = '0'
-    vnp_TransactionDate = request.POST['trans_date']
-    vnp_CreateDate = datetime.now().strftime('%Y%m%d%H%M%S')
-    vnp_CreateBy = 'user01'
-    vnp_IpAddr = get_client_ip(request)
-
-    hash_data = "|".join([
-        vnp_RequestId, vnp_Version, vnp_Command, vnp_TmnCode, vnp_TransactionType, vnp_TxnRef,
-        vnp_Amount, vnp_TransactionNo, vnp_TransactionDate, vnp_CreateBy, vnp_CreateDate,
-        vnp_IpAddr, vnp_OrderInfo
-    ])
-
-    secure_hash = hmac.new(secret_key.encode(),
-                           hash_data.encode(), hashlib.sha512).hexdigest()
-
-    data = {
-        "vnp_RequestId": vnp_RequestId,
-        "vnp_TmnCode": vnp_TmnCode,
-        "vnp_Command": vnp_Command,
-        "vnp_TxnRef": vnp_TxnRef,
-        "vnp_Amount": vnp_Amount,
-        "vnp_OrderInfo": vnp_OrderInfo,
-        "vnp_TransactionDate": vnp_TransactionDate,
-        "vnp_CreateDate": vnp_CreateDate,
-        "vnp_IpAddr": vnp_IpAddr,
-        "vnp_TransactionType": vnp_TransactionType,
-        "vnp_TransactionNo": vnp_TransactionNo,
-        "vnp_CreateBy": vnp_CreateBy,
-        "vnp_Version": vnp_Version,
-        "vnp_SecureHash": secure_hash
-    }
-
-    headers = {"Content-Type": "application/json"}
-
-    response = requests.post(url, headers=headers, data=json.dumps(data))
-
-    if response.status_code == 200:
-        response_json = json.loads(response.text)
-    else:
-        response_json = {
-            "error": f"Request failed with status code: {response.status_code}"}
-
-    return render(request, "payment/refund.html", {"title": "Kết quả hoàn tiền giao dịch", "response_json": response_json})
 
 
 class OrderStatusViewSet(viewsets.ViewSet, generics.RetrieveAPIView):
