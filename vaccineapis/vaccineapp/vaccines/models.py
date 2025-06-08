@@ -106,7 +106,7 @@ class Injection(BaseModel):
         User, on_delete=models.CASCADE, related_name='injections')
     vaccination_campaign = models.ForeignKey(
         'VaccinationCampaign', on_delete=models.CASCADE, related_name='injections')
-    injection_time = models.DateTimeField()
+    injection_time = models.DateField()
     number = models.IntegerField(null=True, blank=True, default=1)
     status = models.CharField(
         max_length=20,

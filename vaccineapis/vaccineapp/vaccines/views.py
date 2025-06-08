@@ -205,7 +205,7 @@ class UserViewSet(viewsets.ModelViewSet):
             injections = injections.filter(status__in=status_param)
 
         if injection_date:
-            injections = injections.filter(injection_time__date=injection_date)
+            injections = injections.filter(injection_time=injection_date)
 
         if sort_by == 'date_asc':
             injections = injections.order_by('injection_time', 'id')
@@ -240,15 +240,10 @@ class UserViewSet(viewsets.ModelViewSet):
             if not user.check_password(old_password):
                 return Response({'error': 'Mật khẩu cũ không đúng'},
                                 status=status.HTTP_400_BAD_REQUEST)
-
-            try:
-                user.set_password(new_password)
-                user.save()
-                return Response({'message': 'Đổi mật khẩu thành công'},
-                                status=status.HTTP_200_OK)
-            except Exception as e:
-                return Response({'error': str(e)},
-                                status=status.HTTP_400_BAD_REQUEST)
+            user.set_password(new_password)
+            user.save()
+            return Response({'message': 'Đổi mật khẩu thành công'},
+                            status=status.HTTP_200_OK)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -388,7 +383,6 @@ class VaccinationCampaignViewSet(viewsets.ViewSet, generics.ListAPIView, generic
     queryset = VaccinationCampaign.objects.all()
     serializer_class = VaccinationCampaignSerializer
     permission_classes = [AllowAny]
-
 
 
 class NotificationViewSet(viewsets.ViewSet):
@@ -682,8 +676,6 @@ n = random.randint(10**11, 10**12 - 1)
 n_str = str(n)
 while len(n_str) < 12:
     n_str = '0' + n_str
-
-
 
 
 class OrderStatusViewSet(viewsets.ViewSet, generics.RetrieveAPIView):
