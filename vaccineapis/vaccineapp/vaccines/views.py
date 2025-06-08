@@ -247,76 +247,6 @@ class UserViewSet(viewsets.ModelViewSet):
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    @action(detail=True, methods=['get'], url_path='injection-certificate/(?P<injection_id>[^/.]+)')
-    def download_injection_certificate(self, request, pk=None, injection_id=None):
-        user = self.get_object()
-        try:
-            if request.user.is_staff:
-                injection = Injection.objects.get(id=injection_id)
-            else:
-                injection = Injection.objects.get(id=injection_id, user=user)
-        except Injection.DoesNotExist:
-            return Response({'error': 'Injection không tồn tại hoặc không thuộc về user này'}, status=status.HTTP_404_NOT_FOUND)
-
-        response = HttpResponse(content_type='application/pdf')
-        response['Content-Disposition'] = f'attachment; filename="certificate_{user.username}_injection_{injection.id}.pdf"'
-        p = canvas.Canvas(response, pagesize=A4)
-        width, height = A4
-        margin = 20 * mm
-
-        p.setFont("Arial", 12)
-        p.drawCentredString(width/2, height - margin,
-                            "CỘNG HOÀ XÃ HỘI CHỦ NGHĨA VIỆT NAM")
-        p.setFont("Arial", 11)
-        p.drawCentredString(width/2, height - margin - 18,
-                            "Độc lập - Tự do - Hạnh phúc")
-        p.line(width/2 - 60, height - margin - 21,
-               width/2 + 60, height - margin - 21)
-
-        p.setFont("Arial", 16)
-        p.drawCentredString(width/2, height - margin - 45,
-                            "GIẤY XÁC NHẬN ĐÃ TIÊM VẮC XIN")
-
-        y = height - margin - 75
-        p.setFont("Arial", 12)
-        p.drawString(margin, y, f"Họ và tên: {user.get_full_name()}")
-        y -= 18
-        p.drawString(
-            margin, y, f"Sinh ngày: {user.birth_date.strftime('%d/%m/%Y') if user.birth_date else ''}    Giới tính: {'Nam' if user.gender else 'Nữ'}")
-        y -= 18
-        p.drawString(margin, y, f"Số điện thoại: {user.phone or ''}")
-        y -= 18
-        p.drawString(margin, y, f"Địa chỉ: {user.address or ''}")
-
-        y -= 30
-        p.setFont("Arial", 12)
-        p.drawString(margin, y, "Thông tin mũi tiêm:")
-        y -= 18
-        p.setFont("Arial", 11)
-        p.drawString(margin + 20, y, f"Vaccine: {injection.vaccine.name}")
-        y -= 16
-        p.drawString(margin + 20, y, f"Số mũi: {injection.number}")
-        y -= 16
-        p.drawString(
-            margin + 20, y, f"Thời gian tiêm: {injection.injection_time.strftime('%H:%M, ngày %d/%m/%Y')}")
-        y -= 16
-        p.drawString(margin + 20, y,
-                     f"Trạng thái: {injection.get_status_display()}")
-        y -= 16
-        if injection.note:
-            p.drawString(margin + 20, y, f"Ghi chú: {injection.note}")
-
-        y -= 40
-        p.setFont("Arial", 12)
-        p.drawRightString(width - margin, y, "Đơn vị tiêm chủng")
-        y -= 16
-        p.setFont("Arial", 10)
-        p.drawRightString(width - margin, y, "(Ký, đóng dấu)")
-
-        p.showPage()
-        p.save()
-        return response
-
 
 def verify_email(request):
     token = request.GET.get('token')
@@ -376,7 +306,81 @@ class InjectionViewSet(viewsets.ModelViewSet):
     def get_permissions(self):
         if self.action == 'create':
             return [InjectionOwner()]
+        if self.action == 'download_injection_certificate':
+            if self.request.user.is_staff:
+                return [IsStaff()]
+            return [InjectionOwner()]
+
         return [IsStaff()]
+
+    @action(detail=True, methods=['get'], url_path='certificate')
+    def download_injection_certificate(self, request, pk=None):
+        try:
+            if request.user.is_staff:
+                injection = Injection.objects.get(id=pk)
+            else:
+                injection = Injection.objects.get(id=pk, user=request.user)
+        except Injection.DoesNotExist:
+            return Response({'error': 'Injection không tồn tại hoặc không thuộc về user này'}, status=status.HTTP_404_NOT_FOUND)
+
+        response = HttpResponse(content_type='application/pdf')
+        response['Content-Disposition'] = f'attachment; filename="certificate_{injection.user.username}_injection_{injection.id}.pdf"'
+        p = canvas.Canvas(response, pagesize=A4)
+        width, height = A4
+        margin = 20 * mm
+
+        p.setFont("Arial", 12)
+        p.drawCentredString(width/2, height - margin,
+                            "CỘNG HOÀ XÃ HỘI CHỦ NGHĨA VIỆT NAM")
+        p.setFont("Arial", 11)
+        p.drawCentredString(width/2, height - margin - 18,
+                            "Độc lập - Tự do - Hạnh phúc")
+        p.line(width/2 - 60, height - margin - 21,
+               width/2 + 60, height - margin - 21)
+
+        p.setFont("Arial", 16)
+        p.drawCentredString(width/2, height - margin - 45,
+                            "GIẤY XÁC NHẬN ĐÃ TIÊM VẮC XIN")
+
+        y = height - margin - 75
+        p.setFont("Arial", 12)
+        p.drawString(margin, y, f"Họ và tên: {injection.user.get_full_name()}")
+        y -= 18
+        p.drawString(
+            margin, y, f"Sinh ngày: {injection.user.birth_date.strftime('%d/%m/%Y') if injection.user.birth_date else ''}    Giới tính: {'Nam' if injection.user.gender else 'Nữ'}")
+        y -= 18
+        p.drawString(margin, y, f"Số điện thoại: {injection.user.phone or ''}")
+        y -= 18
+        p.drawString(margin, y, f"Địa chỉ: {injection.user.address or ''}")
+
+        y -= 30
+        p.setFont("Arial", 12)
+        p.drawString(margin, y, "Thông tin mũi tiêm:")
+        y -= 18
+        p.setFont("Arial", 11)
+        p.drawString(margin + 20, y, f"Vaccine: {injection.vaccine.name}")
+        y -= 16
+        p.drawString(margin + 20, y, f"Số mũi: {injection.number}")
+        y -= 16
+        p.drawString(
+            margin + 20, y, f"Thời gian tiêm: {injection.injection_time.strftime('%d/%m/%Y')}")
+        y -= 16
+        p.drawString(margin + 20, y,
+                     f"Trạng thái: {injection.get_status_display()}")
+        y -= 16
+        if injection.note:
+            p.drawString(margin + 20, y, f"Ghi chú: {injection.note}")
+
+        y -= 40
+        p.setFont("Arial", 12)
+        p.drawRightString(width - margin, y, "Đơn vị tiêm chủng")
+        y -= 16
+        p.setFont("Arial", 10)
+        p.drawRightString(width - margin, y, "(Ký, đóng dấu)")
+
+        p.showPage()
+        p.save()
+        return response
 
 
 class VaccinationCampaignViewSet(viewsets.ViewSet, generics.ListAPIView, generics.RetrieveAPIView):
