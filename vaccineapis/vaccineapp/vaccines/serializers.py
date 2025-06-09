@@ -116,16 +116,6 @@ class UserRegisterSerializer(serializers.ModelSerializer):
         user.save()
         return user
 
-    # def to_internal_value(self, data):
-    #     try:
-    #         return super().to_internal_value(data)
-    #     except serializers.ValidationError as exc:
-    #         errors = exc.detail
-    #         if 'username' in errors:
-    #             for i, msg in enumerate(errors['username']):
-    #                 if 'already exists' in msg or 'unique' in msg:
-    #                     errors['username'][i] = "Tên đăng nhập đã tồn tại!"
-    #         raise serializers.ValidationError(errors)
 
 
 class ChangePasswordSerializer(serializers.Serializer):
@@ -230,14 +220,11 @@ class PublicNotificationSerializer(serializers.ModelSerializer):
                   'notification_date', 'vaccine_campaign', 'is_read']
         read_only_fields = ['notification_date']
 
-    def get_is_read(self, obj):
+    def get_is_read(self, noti):
         user = self.context['request'].user
-        try:
-            status = NotificationStatus.objects.get(
-                user=user, public_notification=obj)
-            return status.is_read
-        except NotificationStatus.DoesNotExist:
-            return False
+        status = NotificationStatus.objects.get(
+            user=user, public_notification=noti)
+        return status.is_read
 
 
 class NotificationStatusSerializer(serializers.ModelSerializer):
@@ -247,12 +234,14 @@ class NotificationStatusSerializer(serializers.ModelSerializer):
 
 
 class OrderDetailSerializer(serializers.ModelSerializer):
-    vaccine = serializers.PrimaryKeyRelatedField(read_only=True)
+    vaccine = serializers.SerializerMethodField()
 
     class Meta:
         model = OrderDetail
         fields = ['vaccine', 'unit_price']
-
+    
+    def get_vaccine(self, od):
+        return od.vaccine.id
 
 class OrderSerializer(serializers.ModelSerializer):
     order_details = OrderDetailSerializer(many=True, read_only=True)

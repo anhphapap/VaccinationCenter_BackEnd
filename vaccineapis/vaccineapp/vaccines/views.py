@@ -100,7 +100,6 @@ class VaccineViewSet(viewsets.ViewSet, generics.RetrieveAPIView, generics.ListAP
 
 
 class UserViewSet(viewsets.ModelViewSet):
-    serializer_class = UserSerializer
     pagination_class = UserPaginator
     http_method_names = ['get', 'post', 'patch']
 
@@ -128,7 +127,6 @@ class UserViewSet(viewsets.ModelViewSet):
         return UserSerializer
 
     def send_verification_email(self, user):
-
         token = get_random_string(length=32)
         user.email_verification_token = token
         user.email_verification_token_created_at = timezone.now()
@@ -175,15 +173,15 @@ class UserViewSet(viewsets.ModelViewSet):
         return Response({'message': 'Đã gửi lại email xác thực'}, status=status.HTTP_200_OK)
 
     def partial_update(self, request, *args, **kwargs):
-        instance = self.get_object()
+        user = self.get_object()
         serializer = self.get_serializer(
-            instance, data=request.data, partial=True)
+            user, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         self.perform_update(serializer)
         if 'email' in request.data:
 
-            instance.email_verified = False
-            self.send_verification_email(instance)
+            user.email_verified = False
+            self.send_verification_email(user)
         return Response(serializer.data)
 
     @action(detail=True, methods=['get'], url_path='injections', pagination_class=InjectionPaginator)
@@ -594,7 +592,8 @@ def payment_ipn(request):
         vnp_CardType = inputData.get('vnp_CardType')
 
         if vnp.validate_response(settings.VNPAY_HASH_SECRET_KEY):
-            if not Order.objects.filter(order_id=order_id).exists():
+            order = Order.objects.filter(order_id=order_id)
+            if not order.exists():
                 if vnp_ResponseCode == '00':
                     Order.objects.create(
                         order_id=order_id,
