@@ -20,7 +20,7 @@ def send_injection_reminder():
     ).select_related('user', 'vaccine')
 
     for injection in upcoming_injections:
-        is_today = injection.injection_time.date() == now.date()
+        is_today = injection.injection_time == now.date()
 
         if is_today:
             title = f"NHẮC NHỞ: Hôm nay là ngày tiêm {injection.vaccine.name}"

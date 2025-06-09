@@ -299,8 +299,8 @@ class InjectionViewSet(viewsets.ModelViewSet):
 
     def get_permissions(self):
         if self.action in ['retrieve'] and not self.request.user.is_staff:
-            return [UserOwner()]
-        return [IsAuthenticated()]
+            return [InjectionOwner()]
+        return [IsStaff()]
 
     @action(detail=True, methods=['get'], url_path='certificate')
     def download_injection_certificate(self, request, pk=None):
@@ -442,7 +442,7 @@ class NotificationViewSet(viewsets.ViewSet):
                 return Response({'error': 'Không tìm thấy thông báo private hoặc đã được đánh dấu đọc'},
                                 status=status.HTTP_404_NOT_FOUND)
             except Exception:
-                return Response({'error': 'Không tìm thấy thông báo private'},
+                return Response({'error': 'Không tìm thấy thông báo'},
                                 status=status.HTTP_404_NOT_FOUND)
 
         elif notification_type == 'public':
@@ -453,10 +453,10 @@ class NotificationViewSet(viewsets.ViewSet):
                     public_notification=notification,
                     defaults={'is_read': True}
                 )
-                return Response({'message': 'Đã đánh dấu thông báo public đã đọc'},
+                return Response({'message': 'Đã đánh dấu thông báo đã đọc'},
                                 status=status.HTTP_200_OK)
             except PublicNotification.DoesNotExist:
-                return Response({'error': 'Không tìm thấy thông báo public'},
+                return Response({'error': 'Không tìm thấy thông báo'},
                                 status=status.HTTP_404_NOT_FOUND)
 
         return Response({'error': 'Loại thông báo không hợp lệ'},
@@ -518,9 +518,9 @@ def payment(request):
             vnp.requestData['vnp_ReturnUrl'] = settings.VNPAY_RETURN_URL
             vnpay_payment_url = vnp.get_payment_url(
                 settings.VNPAY_PAYMENT_URL, settings.VNPAY_HASH_SECRET_KEY)
-            return JsonResponse({'RspCode': '00', 'Message': 'Order updated successfully', 'payment_url': vnpay_payment_url})
+            return JsonResponse({'RspCode': '00', 'Message': 'Thanh toán thành công', 'payment_url': vnpay_payment_url})
         except Order.DoesNotExist:
-            return JsonResponse({'RspCode': '01', 'Message': 'Order not found'}, status=404)
+            return JsonResponse({'RspCode': '01', 'Message': 'Không tìm thấy đơn hàng'}, status=404)
 
     if request.method == 'POST':
         order_type = request.data.get('order_type')
