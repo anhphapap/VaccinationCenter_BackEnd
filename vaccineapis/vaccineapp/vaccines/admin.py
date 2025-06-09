@@ -123,9 +123,9 @@ class VaccineAppAdmin(admin.AdminSite):
         vaccine_labels = [item['vaccine__name'] for item in popular_vaccines]
         vaccine_data = [item['total_quantity'] for item in popular_vaccines]
 
-        vaccine_labels_quarterly = [item['vaccine__name']
+        vaccine_label_quarter = [item['vaccine__name']
                                     for item in popular_vaccines_quarterly]
-        vaccine_data_quarterly = [item['total_quantity']
+        vaccine_data_quarter = [item['total_quantity']
                                   for item in popular_vaccines_quarterly]
 
         vaccine_labels_yearly = [item['vaccine__name']
@@ -144,11 +144,10 @@ class VaccineAppAdmin(admin.AdminSite):
             'yearly_revenue': yearly_revenue,
             'yearly_purchased_vaccines': yearly_purchased_vaccines,
 
-            # Dữ liệu cho biểu đồ
             'vaccine_labels': json.dumps(vaccine_labels),
             'vaccine_data': json.dumps(vaccine_data),
-            'vaccine_labels_quarterly': json.dumps(vaccine_labels_quarterly),
-            'vaccine_data_quarterly': json.dumps(vaccine_data_quarterly),
+            'vaccine_labels_quarterly': json.dumps(vaccine_label_quarter),
+            'vaccine_data_quarterly': json.dumps(vaccine_data_quarter),
             'vaccine_labels_yearly': json.dumps(vaccine_labels_yearly),
             'vaccine_data_yearly': json.dumps(vaccine_data_yearly),
             'current_quarter': current_quarter,
@@ -200,19 +199,11 @@ class VaccinationCampaignAdmin(BaseAdmin):
     search_fields = ('name', 'start_date', 'end_date')
     list_filter = ('name', 'start_date', 'end_date')
     fieldsets = (
-        ('Thông tin cơ bản', {
-            'fields': ('name', 'description', 'vaccine')
-        }),
-        ('Thời gian', {
-            'fields': ('start_date', 'end_date')
-        }),
         ('Thông báo', {
             'fields': ('send_notification',),
             'description': 'Chọn để gửi thông báo công khai đến tất cả người dùng khi tạo đợt tiêm mới'
         }),
     )
-    # create noti after create campaign
-
     def save_model(self, request, obj, form, change):
         super().save_model(request, obj, form, change)
 

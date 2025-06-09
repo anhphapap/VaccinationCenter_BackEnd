@@ -234,6 +234,7 @@ class UserViewSet(viewsets.ModelViewSet):
         return Response({'message': 'Đổi mật khẩu thành công'}, status=status.HTTP_200_OK)
 
 
+
 def verify_email(request):
     token = request.GET.get('token')
     user = User.objects.filter(email_verification_token=token).first()
@@ -286,7 +287,7 @@ class InjectionViewSet(viewsets.ModelViewSet):
         return queryset
 
     def get_permissions(self):
-        if self.action in ['retrieve'] and not self.request.user.is_staff:
+        if self.action in ['retrieve', 'create']:
             return [InjectionOwner()]
         return [IsStaff()]
 
