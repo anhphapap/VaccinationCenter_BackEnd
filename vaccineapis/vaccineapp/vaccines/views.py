@@ -289,6 +289,8 @@ class InjectionViewSet(viewsets.ModelViewSet):
     def get_permissions(self):
         if self.action in ['retrieve', 'create']:
             return [InjectionOwner()]
+        if self.action == 'download_injection_certificate':
+            return [IsAuthenticated()]
         return [IsStaff()]
 
     @action(detail=True, methods=['get'], url_path='certificate')
@@ -599,15 +601,15 @@ def payment_ipn(request):
                         vnp_CardType=vnp_CardType,
                         user=None
                     )
-                    return JsonResponse({'RspCode': '00', 'Message': 'Confirm Success'})
+                    return JsonResponse({'RspCode': '00', 'Message': 'Thanh toán thành công'})
                 else:
-                    return JsonResponse({'RspCode': '00', 'Message': 'Payment Failed'})
+                    return JsonResponse({'RspCode': '24', 'Message': 'Thanh toán khoong thành công'})
             else:
-                return JsonResponse({'RspCode': '02', 'Message': 'Order Already Updated'})
+                return JsonResponse({'RspCode': '02', 'Message': 'Đơn hàng đã được cập nhật'})
         else:
-            return JsonResponse({'RspCode': '97', 'Message': 'Invalid Signature'})
+            return JsonResponse({'RspCode': '97', 'Message': 'Chữ ký không hợp lệ'})
     else:
-        return JsonResponse({'RspCode': '99', 'Message': 'Invalid request'})
+        return JsonResponse({'RspCode': '99', 'Message': 'Yêu cầu không hợp lệ'})
 
 
 @api_view(['GET'])
@@ -639,11 +641,11 @@ def payment_return(request):
                 vnp_BankCode=vnp_BankCode,
                 vnp_CardType=vnp_CardType,
             )
-            return JsonResponse({'RspCode': '00', 'Message': 'Payment Success'})
+            return JsonResponse({'RspCode': '00'})
         else:
-            return JsonResponse({'RspCode': '02', 'Message': 'Order Already Updated'})
+            return JsonResponse({'RspCode': '02'})
     else:
-        return JsonResponse({'RspCode': '99', 'Message': 'Invalid request'})
+        return JsonResponse({'RspCode': '99'})
 
 
 def get_client_ip(request):
