@@ -118,12 +118,30 @@ class UserRegisterSerializer(serializers.ModelSerializer):
 
 
 
-class ChangePasswordSerializer(serializers.Serializer):
-    old_password = serializers.CharField(required=True,
-                                         error_messages={'required': 'Bạn phải nhập mật khẩu cũ'})
-    new_password = serializers.CharField(required=True,
-                                         error_messages={'required': 'Bạn phải nhập mật khẩu mới'})
+class ChangePasswordSerializer(serializers.ModelSerializer):
+    old_password = serializers.CharField()
+    new_password = serializers.CharField()
 
+
+    class Meta:
+        model = User
+        fields = ['old_password', 'new_password']
+        extra_kwargs = {
+            'old_password': {
+                'write_only': True,
+                'required': True,
+                'error_messages': {
+                    'required': 'Bạn phải nhập mật khẩu cũ'
+                }
+            },
+            'new_password': {
+                'write_only': True,
+                'required': True,
+                'error_messages': {
+                    'required': 'Bạn phải nhập mật khẩu mới'
+                }
+            }
+        }
     def validate_new_password(self, value):
         if len(value) < 8:
             raise serializers.ValidationError(
@@ -134,12 +152,14 @@ class ChangePasswordSerializer(serializers.Serializer):
         return value
 
     def update(self, instance, validated_data):
-        for attr, value in validated_data.items():
-            if attr == 'new_password':
-                instance.set_password(value)
-            else:
-                setattr(instance, attr, value)
+        old_password = validated_data.get('old_password')
+        new_password = validated_data.get('new_password')
 
+        if not instance.check_password(old_password):
+            raise serializers.ValidationError(
+                {'error': 'Mật khẩu cũ không đúng'})
+
+        instance.set_password(new_password)
         instance.save()
         return instance
 

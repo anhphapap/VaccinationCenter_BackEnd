@@ -229,19 +229,9 @@ class UserViewSet(viewsets.ModelViewSet):
         user = request.user
         serializer = ChangePasswordSerializer(data=request.data)
 
-        if serializer.is_valid():
-            old_password = serializer.validated_data['old_password']
-            new_password = serializer.validated_data['new_password']
-
-            if not user.check_password(old_password):
-                return Response({'error': 'Mật khẩu cũ không đúng'},
-                                status=status.HTTP_400_BAD_REQUEST)
-            user.set_password(new_password)
-            user.save()
-            return Response({'message': 'Đổi mật khẩu thành công'},
-                            status=status.HTTP_200_OK)
-
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        serializer.is_valid(raise_exception=True)
+        serializer.update(user, serializer.validated_data)
+        return Response({'message': 'Đổi mật khẩu thành công'}, status=status.HTTP_200_OK)
 
 
 def verify_email(request):
