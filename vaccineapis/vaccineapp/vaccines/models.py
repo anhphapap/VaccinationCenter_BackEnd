@@ -217,4 +217,3 @@ class OrderDetail(BaseModel):
     vaccine = models.ForeignKey(Vaccine, on_delete=models.CASCADE,
                                 related_name='order_details')
     unit_price = models.FloatField()
-

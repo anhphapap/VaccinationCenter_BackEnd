@@ -160,18 +160,6 @@ class UserViewSet(viewsets.ModelViewSet):
         except Exception as e:
             print(f"that bai: {e}")
 
-    @action(detail=True, methods=['post'], url_path='resend-verification-email')
-    def resend_verification_email(self, request, pk=None):
-        user = self.get_object()
-        if user.email_verified:
-            return Response({'message': 'Email đã được xác thực trước đó'}, status=status.HTTP_400_BAD_REQUEST)
-
-        if user.email_verification_token_created_at and user.email_verification_token_created_at > timezone.now() - timedelta(minutes=5):
-            return Response({'message': 'Vui lòng đợi 5 phút trước khi yêu cầu gửi lại email xác thực'}, status=status.HTTP_400_BAD_REQUEST)
-
-        self.send_verification_email(user)
-        return Response({'message': 'Đã gửi lại email xác thực'}, status=status.HTTP_200_OK)
-
     def partial_update(self, request, *args, **kwargs):
         user = self.get_object()
         serializer = self.get_serializer(
@@ -234,7 +222,6 @@ class UserViewSet(viewsets.ModelViewSet):
         return Response({'message': 'Đổi mật khẩu thành công'}, status=status.HTTP_200_OK)
 
 
-
 def verify_email(request):
     token = request.GET.get('token')
     user = User.objects.filter(email_verification_token=token).first()
@@ -275,7 +262,8 @@ class InjectionViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(injection_time=injection_date)
 
         if name:
-            queryset = queryset.filter(Q(user__first_name__icontains=name) | Q(user__last_name__icontains=name))
+            queryset = queryset.filter(
+                Q(user__first_name__icontains=name) | Q(user__last_name__icontains=name))
 
         if sort_by == 'date_asc':
             queryset = queryset.order_by('injection_time', 'id')
@@ -565,7 +553,7 @@ def payment(request):
 
     return JsonResponse({'error': 'Invalid request method'}, status=405)
 
-
+# Cross-Site Request Forgery
 @csrf_exempt
 @api_view(['GET'])
 def payment_ipn(request):
